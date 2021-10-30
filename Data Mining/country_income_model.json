@@ -1,0 +1,60 @@
+{
+    "dimensions": [
+        {
+          "name": "region",
+          "levels":[{"name":"region",
+                    "label":"Region",
+                    "attributes": ["region"]}]
+        },
+        {
+          "name": "age",
+          "levels":[{"name":"age",
+                    "label":"Age",
+                    "attributes": ["age"]}]
+        },
+        {
+          "name": "online_shopper",
+          "levels":[{"name":"online_shopper",
+                    "label":"Online Shopper",
+                    "attributes": ["online_shopper"]}]
+        }
+    ],
+    "cubes": [
+        {
+            "name": "country_income",
+            "dimensions": ["region","age","online_shopper"],
+            "measures": [{"name":"income", "label":"Income"}],
+            "aggregates": [
+                    {
+                        "name": "amount_sum",
+                        "function": "sum",
+                        "measure": "income"
+                    },
+                    {
+                        "name": "record_count",
+                        "function": "count"
+                    },
+		                {
+                        "name": "maximum",
+                        "function": "max",
+                        "measure": "income"
+                    },
+		                {
+                        "name": "minimum",
+                        "function": "min",
+                        "measure": "income"
+                    },
+                    {
+                        "name": "average",
+                        "function": "avg",
+                        "measure": "income"
+                    }
+                ],
+            "mappings": {
+                          "region.region": "region",
+                          "age.age": "age",
+                          "online_shopper.online_shopper": "online_shopper"
+                         }
+        }
+    ]
+}
