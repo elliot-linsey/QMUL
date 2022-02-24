@@ -1,0 +1,18 @@
+;(function () {
+  // set last site visit to current date/time
+  var currentDate = new Date();
+  var cookieString =
+    "aclu-last-visit=" + encodeURIComponent(currentDate.toUTCString());
+
+  // set expiration date 1 year in future
+  var expiration = new Date(currentDate.getTime());
+  expiration.setFullYear(currentDate.getFullYear() + 1);
+
+  cookieString += ";expires=" + expiration.toUTCString();
+
+  // set the path and SameSite policy
+  cookieString += ";Path=/;Secure;SameSite=Lax";
+
+  // set cookie in browser
+  document.cookie = cookieString;
+})();

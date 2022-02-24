@@ -1,0 +1,39 @@
+.adthrive-device-desktop .adthrive-header{
+min-height:90px;
+}
+.adthrive-device-mobile .adthrive-header{
+min-height:100px;
+}
+.adthrive-device-desktop .adthrive-sidebar{
+min-height: 250px;
+}
+.adthrive-content{
+min-height:100px;
+}
+
+.sticky_sidebar_manual{
+position:sticky;
+top:0;
+}
+.adthrive-ad > div > iframe{
+display:unset;
+}
+
+.adthrive-ad{
+  width: 100%;
+}
+
+/* confirm click footer ad fix test */
+body.adthrive-device-phone .adthrive-footer.adthrive-sticky {
+padding-top:0px;
+overflow:visible !important;
+border-top:0px !important;
+}
+body.adthrive-device-phone .adthrive-sticky.adthrive-footer>.adthrive-close {
+top:-25px !important;
+right:0px !important;
+border-radius: 0px !important;
+line-height: 24px !important;
+font-size: 24px !important;
+}
+/* confirm click footer ad fix test  end */

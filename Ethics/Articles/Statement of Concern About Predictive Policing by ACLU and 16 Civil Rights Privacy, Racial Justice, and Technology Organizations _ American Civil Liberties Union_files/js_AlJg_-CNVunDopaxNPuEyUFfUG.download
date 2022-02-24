@@ -1,0 +1,3667 @@
+(function (Saf, $, undefined) {
+
+  /**
+   * Drupal behavior.
+   */
+  Drupal.behaviors.secureAutofill = {
+    attach:function(context, settings) {
+      // Set up global variables and initiate processing.
+      $('body').once(function() {
+
+        // The node we are operating on.
+        Saf.nid = Drupal.settings.springboard.currentNid;
+
+        // Store URL parameters. If the parameter does not exist
+        // null is returned, if exists but empty, "" is returned.
+        Saf.afParam = Saf.getParameterByName('af');
+        Saf.gsParam = Saf.getParameterByName('gs');
+        Saf.noSave = Saf.getParameterByName('nosave');
+
+        // Whether to show a "Hi user" greeting.
+        Saf.showWelcome = false;
+
+        // Is persistent gift strings enabled?
+        Saf.global = settings.secure_prepopulate.secure_prepopulate_global_gift_strings;
+
+        // Get the gs cookie lifetime
+        Saf.globalExpireUTC = settings.secure_prepopulate.secure_prepopulate_dynamic_gift_strings_cookie_lifetime;
+        Saf.globalExpire = new Date();
+        Saf.globalExpire.setTime(Saf.globalExpireUTC);
+
+        // Is the current node excluded from global gift strings.
+        Saf.globalOmit = settings.secure_prepopulate.secure_prepopulate_gs_omit;
+
+        if (Saf.noSave) {
+          Saf.globalOmit = 1;
+        }
+
+        // Gift string from RMS params.
+        Saf.gsRMSValue = null;
+        Saf.rmsURL = settings.secure_prepopulate.market_source_remote_app_url || null;
+        Saf.rmsAppID = settings.secure_prepopulate.market_source_remote_app_id || null;
+        Saf.rmsGSFetchComplete = false;
+
+        // Read the node-specific gs cookie.
+        Saf.gsNodeCookie = $.cookie("gs-" + Saf.nid);
+        Saf.fundraiser = settings.fundraiser || null;
+
+        if (Saf.fundraiser && !Saf.gsNodeCookie && Saf.gsParam == null && Saf.rmsURL && Saf.rmsAppID) {
+          // If this is a fundraiser form, and there's no gs param
+          // or node-specific cookie, try RMS.
+          // This in turn will call processGiftStrings().
+          Saf.processRmsGiftStrings();
+        }
+        else {
+          // Initiate processing of gift strings on any form type.
+          Saf.processGiftStrings();
+        }
+
+        // Always run autofill.
+        Saf.processAutoFill();
+
+      });
+    }
+  }; // End Drupal.behaviors.secureAutofill
+
+
+})(window.SpringboardSaf = window.SpringboardSaf || {}, jQuery);
+;
+(function (Saf, $, undefined) {
+
+  // Helper function to get url params.
+  Saf.getParameterByName = function (name, url) {
+    if (!url) {
+      url = window.location.href;
+    }
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+      results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return results[2].replace(/\+/g, " ");
+  }
+
+  Saf.getCrossDomainMethod = function () {
+    //Detect browser support for CORS.
+    if ('withCredentials' in new XMLHttpRequest()) {
+      return 'json';
+    }
+    // IE-specific "CORS" XDR.
+    else if (typeof XDomainRequest !== "undefined") {
+      // IE9 doesn't seem to work with cookie values.
+      if (navigator.appVersion.indexOf("MSIE 9.") !== -1) {
+        return 'jsonp';
+      }
+      return 'json';
+    }
+    // Fallback is to use JSONP.
+    return 'jsonp';
+  }
+
+})(window.SpringboardSaf = window.SpringboardSaf || {}, jQuery);
+;
+(function (Saf, $, undefined) {
+
+  // This function should only be called from
+  // Drupal.behaviors.secureAutoFill in secure-prepopulate.js.
+  // Variables starting with "Saf." are initialized there.
+  Saf.processAutoFill = function () {
+    // Handle secure prepopulate querystring.
+    // Check for js cookie first, if it's in place then use it rather than af.
+    // Cookie is based on nid.
+    var afCookie = null;
+
+    if (Saf.nid) {
+      afCookie = $.cookie("af-" + Saf.nid);
+    }
+
+    // If this is an offline form, use the AF if present, otherwise use regular logic.
+    Saf.offline = Saf.getParameterByName('offline');
+    if (!afCookie || (Saf.offline && Saf.offline == 'true')) {
+      // Get af from URL if it wasn't in our cookie.
+      var af = Saf.afParam
+      if (af) {
+        // Set to null so this hash can be set server-side.
+        var afHash = null;
+      }
+    }
+
+    // Use the cookie if we have it and didn't set af above.
+    if (afCookie && typeof(af) == 'undefined') {
+      af = afCookie;
+      // Get per-user hash.
+      afHash = $.cookie("af-" + Saf.nid + '-hash');
+    }
+
+    // Decrypt whichever value we chose to use above.
+    if (typeof(af) !== 'undefined' && typeof(afHash) !== 'undefined') {
+      processAutoFillAjax(af, afHash, afCookie);
+    } else if (Saf.autoFillFallback) {
+      Saf.autoFillFallback(processAutoFillAjaxResults);
+    } else if (Saf.postAutoFill) {
+      Saf.postAutoFill();
+    }
+  };
+
+  function processAutoFillAjax(af, afHash, afCookie) {
+
+    // Post af to 'get_amounts' callback, assemble request params and respond.
+    $.post( "/js/secure_prepopulate/get_values", {
+      js_callback: "get_values",
+      js_module: "secure_prepopulate",
+      af: af,
+      user_hash: afHash,
+      nid: Saf.nid
+    }).done(function(data) {
+      // If response code is successful, take action.
+      if (data && data.response && data.response.code == 200 && data.content) {
+        processAutoFillAjaxResults(data, af, afHash, afCookie);
+        if (Saf.postAutoFill) Saf.postAutoFill();
+      } else if (Saf.autoFillFallback) {
+        Saf.autoFillFallback(processAutoFillAjaxResults);
+      }
+      // End response handler.
+    });
+  }
+
+
+  function processAutoFillAjaxResults(data, af, afHash, afCookie) {
+
+    // Set secure_prepop_autofilled field.
+    $('input[name*=secure_prepop_autofilled]').val(true);
+
+    // Show welcome message with link to 'not me'
+    Saf.showWelcome = true;
+
+    // Iterate through returned object and populate appropriate fields.
+    for (var key in data.content) {
+      if (data.content.hasOwnProperty(key)) {
+        // Email is keyed as "email", but appears on donation forms as "mail".
+        if (key === "email") {
+          $("input[name*='\[mail\]']").val(data.content[key]);
+        }
+        else {
+          // Populate input fields matching key with value returned from callback.
+          $("input[name*='\[" + key + "\]']").val(data.content[key]);
+          // Populate selects.
+          $("select[name*='\[" + key + "\]']").each(function(){
+            $('option[value="' + data.content[key] + '"]', this).prop('selected', true).change();
+          });
+          // Special handling for springboard form keys, which are prefixed with 'sbp_'
+          // Populate input fields matching key with value returned from callback.
+          $("input[name*='\[" + 'sbp_' + key + "\]']").val(data.content[key]);
+          // Populate selects.
+          $("select[name*='\[" + 'sbp_' + key + "\]']").each(function(){
+            $('option[value="' + data.content[key] + '"]', this).prop('selected', true).change();
+          });
+          // TODO handle select fields, radios, and checkboxes.
+        }
+
+        // Set welcome message from drupal.settings.
+        if (key === "first_name" && Saf.showWelcome === true && Saf.nid) {
+          var firstName = data.content[key];
+          var markup = Drupal.settings.secure_prepopulate.secure_prepopulate_not_me;
+          // Replace FIRSTNAME with first name.
+          markup = markup.replace(/FIRSTNAME/g, firstName);
+          $('form.webform-client-form').before(markup);
+          // Special handling for 'not me' link.
+          $('#notme').click(Saf.autoFillFallbackNotMe || function(event) {
+            event.preventDefault();
+            if (typeof(Saf.nid) !== 'undefined') {
+              // Clear af and gs cookies if they're set.
+              if (typeof($.cookie('af-' + Saf.nid) !== 'undefined')) {
+                $.cookie('af-' + Saf.nid, null, { path: '/' });
+              }
+              // Unset user hash.
+              if (typeof($.cookie('af-' + Saf.nid + '-hash') !== 'undefined')) {
+                $.cookie('af-' + Saf.nid + '-hash', null, { path: '/' });
+              }
+              // Unset gift string hash.
+              if (typeof($.cookie('gs-' + Saf.nid) !== 'undefined')) {
+                $.cookie('gs-' + Saf.nid, null, { path: '/' });
+              }
+              // Unset gift string hash.
+              if (typeof($.cookie('gs-global') !== 'undefined')) {
+                $.cookie('gs-global', null, { path: '/' });
+              }
+              // Unset user hash.
+              if (typeof($.cookie('gs-' + Saf.nid + '-hash') !== 'undefined')) {
+                $.cookie('gs-' + Saf.nid + '-hash', null, { path: '/' });
+              }
+              if (typeof($.cookie('gs-' + Saf.nid + '-selected') !== 'undefined')) {
+                $.cookie('gs-' + Saf.nid + '-selected', null, { path: '/' });
+              }
+              if (typeof($.cookie('gs-global-hash') !== 'undefined')) {
+                $.cookie('gs-' + Saf.nid + '-hash', null, { path: '/' });
+              }
+              // Remove querystring from url.
+              window.location = window.location.pathname;
+            }
+          });
+        }
+      }
+    }
+
+    // Don't set the af cookie for offline forms.
+    if (Saf.nid && !afCookie && af && !afHash && (!Saf.offline || Saf.offline !== 'true')) {
+      // Set af cookie if it wasn't before.
+      // This cookie will expire at end of session.
+      $.cookie("af-" + Saf.nid, af, { path: '/' });
+      // Set the per-user hash.
+      if (data.content.userhash) {
+        $.cookie("af-" + Saf.nid + "-hash", data.content.userhash, { path: '/' });
+      }
+    }
+    // Issue a custom trigger so that page wrapper js can respond.
+    $(document).trigger('secure_prepop_autofilled');
+
+    // End data check.
+  }
+
+
+})(window.SpringboardSaf = window.SpringboardSaf || {}, jQuery);
+;
+(function (Saf, $, undefined) {
+
+  // This function should only be called from
+  // Drupal.behaviors.secureAutoFill in secure-prepopulate.js.
+  Saf.processRmsGiftStrings = function () {
+
+    var gsRMSFetchURL = Saf.rmsURL + '/' + Saf.rmsAppID + '/get';
+    $.ajax({
+      url: gsRMSFetchURL + '?cookie_prefix=gift_string&host=' + location.hostname,
+      type: 'GET',
+      dataType: Saf.getCrossDomainMethod(),
+      xhrFields: {
+        withCredentials: true
+      },
+      success: function(data) {
+
+        // Grab the gift string from RMS.
+        var rmsGs = data.gs || null;
+
+        // If this is the first time the RMS has been called after
+        // the module has been enabled, there won't be a gift string.
+        // Check for a global cookie, grab its value and delete it.
+        if (!rmsGs) {
+          Saf.gsRMSValue = $.cookie("gs-global");
+          if (Saf.gsRMSValue) {
+            // Tell setCookie it needs to set the RMS cookie.
+            Saf.rmsGSFetchComplete = 'failed';
+          }
+        }
+        else {
+          Saf.rmsGSFetchComplete = true;
+          // The RMS does not send the gs value encoded, as SP expects it.
+          Saf.gsRMSValue = encodeURIComponent(rmsGs);
+        }
+
+        Saf.processGiftStrings();
+
+      },
+      error: function () {
+        Saf.processGiftStrings();
+      }
+    });
+  };
+
+  Saf.processGiftStrings = function () {
+
+    // Initialize some local variables.
+    var gs;
+    var globalCookie = $.cookie("gs-global");
+    // There is a "gs" parameter in the query.
+    if (Saf.gsParam != null) {
+      gs = Saf.gsParam;
+      // The sole purpose of the gsHash variable is to prevent
+      // RMS gs processing if the "not me" link provided by
+      // secure AF is clicked. The hash cookie is deleted,
+      // in that case.
+      // Set null value and get from php later.
+      var gsHash = null;
+
+      // Value for saving to Salesforce.
+      setGsFlag('Personalized URL')
+    }
+    else if (Saf.fundraiser) {
+      // Only execute this code on fundraiser nodes.
+      // First check if there's a gs for this nid.
+      // If there is, we use that. These are session
+      // cookies, so unless the user has browser set
+      // to keep sessions permanent, they are short-lived.
+      if (Saf.nid && Saf.gsNodeCookie) {
+        gs = Saf.gsNodeCookie;
+        gsHash = $.cookie("gs-" + Saf.nid + '-hash');
+        setGsFlag('Personalized URL');
+      }
+      else if(Saf.global && Saf.globalOmit != 1) {
+        // Can we get a global from rms?
+        if (Saf.gsRMSValue) {
+          gs = Saf.gsRMSValue;
+          setGsFlag('Persistent Gift String');
+        }
+        else if (globalCookie) {
+          // Global cookies have a configurable lifetime.
+          gs = globalCookie;
+          setGsFlag('Persistent Gift String');
+        }
+        if (gs) {
+          // The global hash is used to activate/deactivate both
+          // RMS and Global gift strings. If it does not exist, nothing
+          // happens.
+          gsHash = $.cookie('gs-global-hash');
+          // Both RMS and Global set a "pgs_cookie, presently.
+        }
+      }
+    }
+
+    // Decrypt whichever value we chose to use above.
+    if (gs != null && typeof(gsHash) !== 'undefined') {
+      // Post GS to 'get_amounts' callback, assemble request params and respond.
+      processGiftStringsAjax(gs, gsHash);
+      // End
+    }
+    else {
+      setGsFlag('None');
+    }
+  };
+
+  function setGsFlag(flag) {
+    $('input[name*="gs_flag"]').val(flag);
+  }
+
+  function processGiftStringsAjax(gs, gsHash) {
+    $.post( "/js/secure_prepopulate/get_amounts", {
+      js_callback: "get_amounts",
+      js_module: "secure_prepopulate",
+      gs: gs,
+      user_hash: gsHash,
+    }).done(function(data) {
+      // If response code is successful, take action.
+      if (data && data.response && data.response.code == 200 && data.content) {
+        processGiftStringsAjaxResults(data, gs);
+      }
+      // End response handler.
+    });
+  }
+
+  function processGiftStringsAjaxResults(data, gs) {
+
+    // Parse amounts and defaults into their appropriate fields if we are
+    // on a fundraiser node.
+
+    if (Saf.fundraiser) {
+
+      Saf.updateFields(data);
+
+      // Try to read "last submitted value cookie," if it's present and there are errors,
+      // set that value as default.
+      if ($('div.error').length > 0) {
+        selectedCookie = $.cookie('gs-' + Saf.nid + '-selected');
+        if (selectedCookie && ($.isNumeric(selectedCookie) || selectedCookie === "other")) {
+          Saf.setRegularDefault(selectedCookie);
+          Saf.setRecurringDefault(selectedCookie);
+          var frequencies = Drupal.settings.defaultRecurringFrequencies;
+          $.each(frequencies, function(key, frequency) {
+            Saf.setFrequencyDefault(selectedCookie, frequency);
+          });
+        }
+      }
+
+
+      // Set node-specific cookie.
+      // This cookie will expire at end of session, unless
+      // user has browser configured to preserve session cookies.
+      if (Saf.nid && gs && Saf.gsParam) {
+        $.cookie("gs-" + Saf.nid, gs, {path: '/'});
+        // Set the per-user hash.
+        if (data.content.userhash) {
+          $.cookie("gs-" + Saf.nid + "-hash", data.content.userhash, {path: '/'});
+        }
+      }
+    }
+
+    // Set the global cookie. Do this even if we are not
+    // currently on a fundraiser node. All that is required
+    // is that the gs url parameter exists.
+    if (gs && (Saf.gsParam || Saf.rmsGSFetchComplete == 'failed') && Saf.global && !Saf.noSave) {
+      gsCookieSet(gs, data);
+    }
+
+    // After adding the new amount form items re-run behaviors.
+    Drupal.attachBehaviors();
+
+    // End data check.
+  }
+
+  function gsCookieSet(gs, data) {
+
+    // If the RMS is enabled use that for storing global gs.
+    if (Saf.rmsURL && Saf.rmsAppID) {
+
+      // Send gs value to RMS if it has not already been fetched.
+      if (Saf.gsParam || Saf.rmsGSFetchComplete == 'failed') {
+        var gsRMSSetURL = Saf.rmsURL + '/' + Saf.rmsAppID + '/set';
+        $.ajax({
+          url: gsRMSSetURL + '?gs=' + gs,
+          type: 'GET',
+          dataType: Saf.getCrossDomainMethod(),
+          xhrFields: {
+            withCredentials: true
+          },
+        });
+      }
+    }
+
+    // Always set the global cookie, in case user has disabled third party cookies..
+    $.cookie("gs-global", gs, {expires: Saf.globalExpire, path: '/'});
+
+    // Set the per-user hash. This is used to verify/activate both the RMS
+    // and Global cookies
+    if (data.content.userhash) {
+      $.cookie("gs-global-hash", data.content.userhash, {expires: Saf.globalExpire, path: '/'});
+    }
+  }
+
+})(window.SpringboardSaf = window.SpringboardSaf || {}, jQuery);
+;
+(function (Saf, $, undefined) {
+
+  // Called from secure-prepopulate-gs.js.
+  Saf.updateFields = function(data) {
+    // Parse amounts and defaults into their appropriate fields.
+    updateAmounts(data);
+    updateDefault(data);
+    updateRecurring(data);
+    updateRecurringDefault(data);
+    updateFrequencies(data);
+    updateFrequenciesDefault(data);
+  };
+
+  function updateAmounts(data) {
+    if (typeof(data.content.amounts) !== 'undefined') {
+      // If this is a designations form, special handling of amounts.
+      if ($('#webform-component-designations').length) {
+        // Iterate through each designation group, unless overridden.
+        $("div.designation-group-wrapper:not(.overridden)").each(function(){
+          // Replace amounts for each designation.
+
+          // Take the last amount form item, alter its label and value, and insert before the 'other' form item.
+          var lastAmount = $('[id^="default-amounts-"] .form-item', this).last().clone(true);
+          // Uncheck last amount.
+          $(lastAmount).children('input').attr('checked', false);
+
+          // Now remove all recurring regular options from the form.
+          $('[id^="default-amounts-"] .form-item', this).remove();
+
+          // Next, iterate and process amounts.
+          var amounts = data.content.amounts.split("|");
+          for (var i = 0, len = amounts.length; i < len; i++) {
+            // Set amount value.
+            $(lastAmount).children('input').val(amounts[i]);
+            // Set amount label, use appropriate currency.
+            if (Drupal.settings.fundraiser.currency.symbol) {
+              var symbol = Drupal.settings.fundraiser.currency.symbol;
+            }
+            else {
+              var symbol = "$";
+            }
+            $(lastAmount).children('label').text(symbol + amounts[i]);
+            // Set element ID and corresponding label.
+            $('input', lastAmount).attr('id', 'edit-submitted-designations-designation-box-1-default-amounts-1-' + amounts[i]);
+            $('label', lastAmount).attr('for', 'edit-submitted-designations-designation-box-1-default-amounts-1-' + amounts[i]);
+            // Insert after last amount.
+            $('[id^="default-amounts-"]', this).append(lastAmount);
+            // Show the new amount.
+            $(lastAmount).show();
+            // Reset last amount.
+            var lastAmount = $('[id^="default-amounts-"] .form-item', this).last().clone(true);
+            // Uncheck last amount.
+            $(lastAmount).children('input').attr('checked', false);
+          }
+
+        });
+      } else if (($('input[name*=recurs_monthly]').attr("type") != "hidden") || ($('input[name*=recurs_monthly]').attr("type") == "hidden" && $('input[name*=recurs_monthly]').val() != "recurs")) {
+        // Find and replace amount.
+        // If this is a user choice form with or without dual ask, set amounts.
+        // If this is a one-time-only form, set amounts. Don't set amounts for recurring-only forms.
+        var amounts = data.content.amounts.split("|");
+        setAmounts(amounts);
+        // End handling for non-designation amounts.
+      }
+      // End handling for amounts.
+    }
+  }
+
+  function updateDefault(data) {
+    // Set 'default' amount.
+    if (typeof(data.content.default) !== 'undefined') {
+      // If this is a designations form, special handling of amounts.
+      if ($('#webform-component-designations').length) {
+        // Replace the designation default amount for each designations item.
+        // Iterate through each designation group, unless overridden.
+        $("div.designation-group-wrapper:not(.overridden)").each(function(){
+          // Get the default amount as returned and attempt to set it for each designation.
+          var amounts = $('[id^="default-amounts-"] .form-item input:visible', this);
+          // Iterate through amounts, set value if possible.
+          for (var i = 0, len = amounts.length; i < len; i++) {
+            if (amounts[i].value == data.content.default) {
+              // Uncheck all other values first.
+              $('[id^="default-amounts-"] .form-item input', this).attr('checked', false);
+              // Now set ours.
+              $(amounts[i]).attr('checked', 'checked');
+            }
+          }
+        });
+      }
+      else if (($('input[name*=recurs_monthly]').attr("type") != "hidden") || ($('input[name*=recurs_monthly]').attr("type") == "hidden" && $('input[name*=recurs_monthly]').val() != "recurs")) {
+        // Find and replace amount.
+        // If this is a user choice form with or without dual ask, set default.
+        // If this is a one-time-only form, set default. Don't set default for recurring-only forms.
+        Saf.setRegularDefault(data.content.default);
+        // End handling for non-designation default.
+      }
+    }
+  }
+
+  function updateRecurring(data) {
+    if (typeof(data.content.recurring_amounts) !== 'undefined') {
+      // If this is a designations form, special handling of amounts.
+      if ($('#webform-component-designations').length) {
+        // Iterate through each designation group, unless overridden.
+        $("div.designation-group-wrapper:not(.overridden)").each(function(){
+          // Replace amounts for each designation.
+
+          // Take the last amount form item, alter its label and value, and insert before the 'other' form item.
+          var lastAmount = $('[id^="recurring-amounts-"] .form-item', this).last().clone(true);
+          // Uncheck last amount.
+          $(lastAmount).children('input').attr('checked', false);
+
+          // Now remove all recurring regular options from the form.
+          $('[id^="recurring-amounts-"] .form-item', this).remove();
+
+          // Next, iterate and process amounts.
+          var recurring_amounts = data.content.recurring_amounts.split("|");
+          for (var i = 0, len = recurring_amounts.length; i < len; i++) {
+            // Set amount value.
+            $(lastAmount).children('input').val(recurring_amounts[i]);
+            // Set amount label, use appropriate currency.
+            if (Drupal.settings.fundraiser.currency.symbol) {
+              var symbol = Drupal.settings.fundraiser.currency.symbol;
+            }
+            else {
+              var symbol = "$";
+            }
+            $(lastAmount).children('label').text(symbol + recurring_amounts[i]);
+            // Set element ID and corresponding label.
+            $('input', lastAmount).attr('id', 'edit-submitted-designations-designation-box-1-recurring-amounts-1-' + recurring_amounts[i]);
+            $('label', lastAmount).attr('for', 'edit-submitted-designations-designation-box-1-recurring-amounts-1-' + recurring_amounts[i]);
+            // Insert after last amount.
+            $('[id^="recurring-amounts-"]', this).append(lastAmount);
+            // Show the new amount.
+            $(lastAmount).show();
+            // Reset last amount.
+            var lastAmount = $('[id^="recurring-amounts-"] .form-item', this).last().clone(true);
+            // Uncheck last amount.
+            $(lastAmount).children('input').attr('checked', false);
+          }
+
+        });
+      }
+      else {
+        // Begin handling of non-designation recurring amounts.
+        // Get amounts from return.
+        var amounts = data.content.recurring_amounts.split("|");
+        // If this is a one-time-only form, take no action.
+        // If this is a user choice form without dual ask, take no action.
+        // If this is a user choice form with dual ask, set the recurring amounts.
+        if ($('input[name*=recurs_monthly]').attr("type") != "hidden" && $("div[id^=edit-submitted-][id$=recurring-amount] input:first").val() != '') {
+          setRecurringAmounts(amounts);
+        } else if ($('input[name*=recurs_monthly]').attr("type") == "hidden" && $('input[name*=recurs_monthly]').val() == "recurs") {
+          // If this is a recurring-only form, set the regular amounts.
+          setAmounts(amounts);
+        }
+        // End handling for non-designation recurring amounts.
+      }
+    }
+  }
+
+  function updateRecurringDefault(data) {
+    // Set recurring default.
+    if (typeof(data.content.recurring_default) !== 'undefined') {
+      // If this is a designations form, special handling of amounts.
+      if ($('#webform-component-designations').length) {
+        // Replace the designation recurring default amount for each designations item.
+        // Iterate through each designation group, unless overridden.
+        $("div.designation-group-wrapper:not(.overridden)").each(function(){
+          // Get the recurring amount as returned and attempt to set it.
+          var recurring_amounts = $('[id^="recurring-amounts-"] .form-item input', this);
+          // Iterate through amounts, set value if possible.
+          for (var i = 0, len = recurring_amounts.length; i < len; i++) {
+            if (recurring_amounts[i].value == data.content.recurring_default) {
+              // Uncheck all other values first.
+              $('[id^="recurring-amounts-"] .form-item input', this).attr('checked', false);
+              // Now set ours.
+              $(recurring_amounts[i]).attr('checked', 'checked');
+            }
+          }
+        });
+      }
+      else {
+        // If this is a one-time-only form, take no action.
+        // If this is a user choice form without dual ask, take no action.
+        // If this is a user choice form with dual ask, set the recurring default amount.
+        if ($('input[name*=recurs_monthly]').attr("type") != "hidden" && $("div[id^=edit-submitted-][id$=recurring-amount] .form-type-radio:first input").val() != '') {
+          Saf.setRecurringDefault(data.content.recurring_default);
+        } else if ($('input[name*=recurs_monthly]').attr("type") == "hidden" && $('input[name*=recurs_monthly]').val() == "recurs") {
+          // If this is a recurring-only form, set the regular default amount.
+          Saf.setRegularDefault(data.content.recurring_default);
+        }
+      }
+    }
+  }
+
+  function updateFrequencies(data) {
+    var frequencies = Drupal.settings.defaultRecurringFrequencies;
+
+    $.each(frequencies, function(key, frequency) {
+
+    if (typeof(data.content[frequency + "_amounts"]) !== 'undefined') {
+      // If this is a designations form, special handling of amounts.
+      if ($('#webform-component-designations').length) {
+        // Do nothing now.
+      }
+      else {
+        // Begin handling of non-designation recurring amounts.
+        // Get amounts from return.
+        var amounts = data.content[frequency + "_amounts"].split("|");
+        // If this is a one-time-only form, take no action.
+        // If this is a user choice form without dual ask, take no action.
+        // If this is a user choice form with dual ask, set the recurring amounts.
+        var frequencyClass = frequency.replace(/_/g, '-');
+        if ($('input[name*=recurs_monthly]').attr("type") != "hidden" && $("input[id$=" + frequencyClass + "-amount] input:first").val() != '') {
+          setFrequenciesAmounts(amounts, frequency);
+        } else if ($('input[name*=recurs_monthly]').attr("type") == "hidden" && $('input[name*=recurs_monthly]').val() != "NO_RECURR") {
+          // If this is a recurring-only form, set the regular amounts.
+          setAmounts(amounts);
+        }
+        // End handling for non-designation recurring amounts.
+      }
+    }
+  });
+  }
+
+  function updateFrequenciesDefault(data) {
+    // Set recurring default.
+    var frequencies = Drupal.settings.defaultRecurringFrequencies;
+
+    $.each(frequencies, function(key, frequency) {
+      var frequencyClass = frequency.replace(/_/g, '-');
+
+      if (typeof(data.content[frequency + '_default']) !== 'undefined') {
+        var x = frequency.replace(/_/g, '-');
+
+        // If this is a designations form, special handling of amounts.
+        if ($('#webform-component-designations').length) {
+          // Replace the designation recurring default amount for each designations item.
+          // Iterate through each designation group, unless overridden.
+          $("div.designation-group-wrapper:not(.overridden)").each(function () {
+            // Get the recurring amount as returned and attempt to set it.
+            var frequency_amounts = $('[id^="' + frequencyClass + '-amounts-"] .form-item input', this);
+            // Iterate through amounts, set value if possible.
+            for (var i = 0, len = frequency_amounts.length; i < len; i++) {
+              if (frequency_amounts[i].value == data.content[frequency + '_default']) {
+                // Uncheck all other values first.
+                $('[id^="' +frequencyClass + '-amounts-"] .form-item input', this).attr('checked', false);
+                // Now set ours.
+                $(frequency_amounts[i]).attr('checked', 'checked');
+              }
+            }
+          });
+        }
+        else {
+          // If this is a one-time-only form, take no action.
+          // If this is a user choice form without dual ask, take no action.
+          // If this is a user choice form with dual ask, set the recurring default amount.
+          if ($('input[name*=recurs_monthly]').attr("type") != "hidden" && $("div[id^=edit-frequencies][id$=" + frequencyClass + "-amount] .form-type-radio:first input").val() != '') {
+            Saf.setFrequencyDefault(data.content[frequency + '_default'], frequency);
+          } else if ($('input[name*=recurs_monthly]').attr("type") == "hidden" && $('input[name*=recurs_monthly]').val() != "NO_RECURR") {
+            // If this is a recurring-only form, set the regular default amount.
+            Saf.setRegularDefault(data.content[frequency + '_default']);
+          }
+        }
+      }
+    });
+  }
+
+
+  // Helper function to override amounts onent.
+  function setAmounts(amounts) {
+    // Find and replace amount.
+    // Take last form item, alter its label and value, and insert before the 'other' form item.
+    var lastAmount = $('div[id^=edit-submitted-][id$=amount]:not([id$=recurring-amount]) .form-type-radio').last().clone(true);
+    // Uncheck last amount.
+    $(lastAmount).children('input').attr('checked', false);
+
+    // Remove all regular options from the form.
+    $('div[id^=edit-submitted-][id$=amount]:not([id$=recurring-amount]) .form-type-radio').remove();
+
+    // If the last amount's value is 'other', add it back to the end of the form item.
+    if ($('input', lastAmount).val() == 'other') {
+      var otherAmount = $(lastAmount).clone(true);
+    }
+
+    for (var i = 0, len = amounts.length; i < len; i++) {
+      // Set amount value.
+      $(lastAmount).children('input').val(amounts[i]);
+      // Set amount label, use appropriate currency.
+      if (typeof(Drupal.settings.fundraiser) !== "undefined" && typeof(Drupal.settings.fundraiser.currency) !== "undefined" && typeof(Drupal.settings.fundraiser.currency.symbol) !== "undefined") {
+        var symbol = Drupal.settings.fundraiser.currency.symbol;
+      }
+      else {
+        var symbol = "$";
+      }
+      $(lastAmount).children('label').text(symbol + amounts[i]);
+
+      // Set element ID.
+      var oldId = $('input', lastAmount).attr('id').split('-');
+      oldId.splice(-1,1);
+      oldId = oldId.join('-');
+      var newId = oldId  + '-' + i;
+      $('input', lastAmount).attr('id', newId);
+
+      var oldLabel = $('label', lastAmount).attr('for').split('-');
+      oldLabel.splice(-1,1);
+      oldLabel = oldLabel.join('-');
+      var newLabel = oldLabel + '-' + i;
+      $('label', lastAmount).attr('for', newLabel);
+
+      // Remove and then add the default classes.
+      lastAmount.removeClass();
+      lastAmount.addClass('form-item form-type-radio form-item-submitted-donation-recurring-amount control-group');
+      // Insert after last amount.
+      $('div[id^=edit-submitted-][id$=amount]:not([id$=recurring-amount])').append(lastAmount);
+      // Show the new amount.
+      $(lastAmount).show();
+      // Reset last amount.
+      var lastAmount = $('div[id^=edit-submitted-][id$=amount]:not([id$=recurring-amount]) .form-item').last().clone(true);
+      // Uncheck last amount.
+      $(lastAmount).children('input').attr('checked', false);
+    }
+
+    // If we have an other amount, append it now.
+    if (typeof(otherAmount) !== "undefined") {
+      // Set element ID.
+      var oldId = $('input', otherAmount).attr('id').split('-');
+      oldId.splice(-1,1);
+      oldId = oldId.join('-');
+      var newId = oldId + '-' + amounts.length;
+      $('input', otherAmount).attr('id', newId);
+
+      var oldLabel = $('label', otherAmount).attr('for').split('-');
+      oldLabel.splice(-1,1);
+      oldLabel = oldLabel.join('-');
+      var newLabel = oldLabel  + '-' + amounts.length;
+      $('label', otherAmount).attr('for', newLabel);
+
+      $('div[id^=edit-submitted-][id$=amount]:not([id$=recurring-amount])').append(otherAmount);
+    }
+  }
+
+  // Helper function to override recurring amounts.
+  function setRecurringAmounts(recurring_amounts) {
+    // Find and replace amount.
+    // Take last form item, alter its label and value, and insert before the 'other' form item.
+    var lastAmount = $('div[id^=edit-submitted-][id$=recurring-amount] .form-type-radio').last().clone(true);
+    // Uncheck last amount.
+    $(lastAmount).children('input').attr('checked', false);
+
+    if (lastAmount.length > 0) {
+      // Remove all recurring options from the form.
+      $('div[id^=edit-submitted-][id$=recurring-amount] .form-type-radio').remove();
+
+      // If the last amount's value is 'other', add it back to the end of the form item.
+      if ($('input', lastAmount).val() == 'other') {
+        var otherAmount = $(lastAmount).clone(true);
+      }
+
+      // Next, iterate and process amounts.
+      for (var i = 0, len = recurring_amounts.length; i < len; i++) {
+        // Set amount value.
+        $(lastAmount).children('input').val(recurring_amounts[i]);
+        // Set amount label, use appropriate currency.
+        if (typeof(Drupal.settings.fundraiser) !== "undefined" && typeof(Drupal.settings.fundraiser.currency) !== "undefined" && typeof(Drupal.settings.fundraiser.currency.symbol) !== "undefined") {
+          var symbol = Drupal.settings.fundraiser.currency.symbol;
+        }
+        else {
+          var symbol = "$";
+        }
+        $(lastAmount).children('label').text(symbol + recurring_amounts[i]);
+
+        // Set element ID.
+        var oldId = $('input', lastAmount).attr('id').split('-');
+        oldId.splice(-1,1);
+        oldId = oldId.join('-') + '-' + i;
+        var newId = oldId + i;
+        $('input', lastAmount).attr('id', newId);
+
+        var oldLabel = $('label', lastAmount).attr('for').split('-');
+        oldLabel.splice(-1,1);
+        oldLabel = oldLabel.join('-') + '-' + i;
+        var newLabel = oldLabel + i;
+        $('label', lastAmount).attr('for', newLabel);
+
+        // Remove and then add the default classes.
+        lastAmount.removeClass();
+        lastAmount.addClass('form-item form-type-radio form-item-submitted-donation-recurring-amount control-group');
+        // Insert after last amount.
+        $('div[id^=edit-submitted-][id$=recurring-amount]').append(lastAmount);
+        // Show the new amount.
+        $(lastAmount).show();
+        // Reset last amount.
+        var lastAmount = $('div[id^=edit-submitted-][id$=recurring-amount] .form-item').last().clone(true);
+        // Uncheck last amount.
+        $(lastAmount).children('input').attr('checked', false);
+      }
+
+      // If we have an other amount, append it now.
+      if (typeof(otherAmount) !== "undefined") {
+        // Set element ID.
+        var oldId = $('input', otherAmount).attr('id').split('-');
+        oldId.splice(-1,1);
+        oldId = oldId.join('-');
+        var newId = oldId + '-' + recurring_amounts.length;
+        $('input', otherAmount).attr('id', newId);
+
+        var oldLabel = $('label', otherAmount).attr('for').split('-');
+        oldLabel.splice(-1,1);
+        oldLabel = oldLabel.join('-');
+        var newLabel = oldLabel  + '-' + recurring_amounts.length;
+        $('label', otherAmount).attr('for', newLabel);
+
+        $('div[id^=edit-submitted-][id$=recurring-amount]').append(otherAmount);
+      }
+    }
+
+  }
+
+  // Helper function to override recurring amounts.
+  function setFrequenciesAmounts(frequency_amounts, frequency) {
+
+    // Find and replace amount.
+    // Take last form item, alter its label and value, and insert before the 'other' form item.
+    var frequencyClass = frequency.replace(/_/g, '-');
+
+    var lastAmount = $('div[id^=edit-frequencies-][id$=' + frequencyClass + '-amount] .form-type-radio').last().clone(true);
+    // Uncheck last amount.
+    $(lastAmount).children('input').attr('checked', false);
+
+    if (lastAmount.length > 0) {
+      // Remove all recurring options from the form.
+      $('div[id^=edit-frequencies-][id$=' +frequencyClass + '-amount] .form-type-radio').remove();
+
+      // If the last amount's value is 'other', add it back to the end of the form item.
+      if ($('input', lastAmount).val() == 'other') {
+        var otherAmount = $(lastAmount).clone(true);
+      }
+
+      // Next, iterate and process amounts.
+      for (var i = 0, len = frequency_amounts.length; i < len; i++) {
+        // Set amount value.
+        $(lastAmount).children('input').val(frequency_amounts[i]);
+        // Set amount label, use appropriate currency.
+        if (typeof(Drupal.settings.fundraiser) !== "undefined" && typeof(Drupal.settings.fundraiser.currency) !== "undefined" && typeof(Drupal.settings.fundraiser.currency.symbol) !== "undefined") {
+          var symbol = Drupal.settings.fundraiser.currency.symbol;
+        }
+        else {
+          var symbol = "$";
+        }
+        $(lastAmount).children('label').text(symbol + frequency_amounts[i]);
+
+        // Set element ID.
+        var oldId = $('input', lastAmount).attr('id').split('-');
+        oldId.splice(-1,1);
+        oldId = oldId.join('-') + '-' + i;
+        var newId = oldId + i;
+        $('input', lastAmount).attr('id', newId);
+
+        var oldLabel = $('label', lastAmount).attr('for').split('-');
+        oldLabel.splice(-1,1);
+        oldLabel = oldLabel.join('-') + '-' + i;
+        var newLabel = oldLabel + i;
+        $('label', lastAmount).attr('for', newLabel);
+
+        // Remove and then add the default classes.
+        lastAmount.removeClass();
+        lastAmount.addClass('form-item form-type-radio form-item-submitted-donation-' + frequencyClass + '-amount control-group');
+        // Insert after last amount.
+        $('div[id^=edit-frequencies-][id$=' +frequencyClass + '-amount]').append(lastAmount);
+        // Show the new amount.
+        $(lastAmount).show();
+        // Reset last amount.
+        var lastAmount = $('div[id^=edit-frequencies-][id$=' + frequencyClass + '-amount] .form-item').last().clone(true);
+        // Uncheck last amount.
+        $(lastAmount).children('input').attr('checked', false);
+      }
+
+      // If we have an other amount, append it now.
+      if (typeof(otherAmount) !== "undefined") {
+        // Set element ID.
+        var oldId = $('input', otherAmount).attr('id').split('-');
+        oldId.splice(-1,1);
+        oldId = oldId.join('-');
+        var newId = oldId + '-' + frequency_amounts.length;
+        $('input', otherAmount).attr('id', newId);
+
+        var oldLabel = $('label', otherAmount).attr('for').split('-');
+        oldLabel.splice(-1,1);
+        oldLabel = oldLabel.join('-');
+        var newLabel = oldLabel  + '-' + frequency_amounts.length;
+        $('label', otherAmount).attr('for', newLabel);
+
+        $('div[id^=edit-frequencies-][id$=' + frequencyClass + '-amount]').append(otherAmount);
+      }
+    }
+  }
+
+
+  // Helper function to set regular default.
+  Saf.setRegularDefault = function(regular_default) {
+    // Get the default amount as returned and attempt to set it.
+    var amounts = $('div[id^=edit-submitted-][id$=-amount]:not([id$=recurring-amount]) .form-item input');
+    // Iterate through amounts, set value if possible.
+    for (var i = 0, len = amounts.length; i < len; i++) {
+      if (amounts[i].value == regular_default) {
+        // Uncheck all other values first.
+        $('div[id^=edit-submitted-][id$=-amount]:not([id$=recurring-amount]) .form-item input').attr('checked', false);
+        // Now set ours.
+        $(amounts[i]).attr('checked', 'checked');
+      }
+    }
+  }
+
+  // Helper function to set recurring default.
+  Saf.setRecurringDefault = function(recurring_default) {
+    // Get the recurring_default amount as returned and attempt to set it.
+    var amounts = $('div[id^=edit-submitted-][id$=recurring-amount]:not([id$=donation-amount]) .form-item input');
+    // Iterate through amounts, set value if possible.
+    for (var i = 0, len = amounts.length; i < len; i++) {
+      if (amounts[i].value == recurring_default) {
+        // Uncheck all other values first.
+        $('div[id^=edit-submitted-][id$=recurring-amount]:not([id$=donation-amount]) .form-item input').attr('checked', false);
+        // Now set ours.
+        $(amounts[i]).attr('checked', 'checked');
+      }
+    }
+  }
+
+  // Helper function to set recurring default.
+  Saf.setFrequencyDefault = function(frequency_default, frequency) {
+    var frequencyClass = frequency.replace(/_/g, '-');
+
+    // Get the frequency_default amount as returned and attempt to set it.
+    var amounts = $('div[id^=edit-frequencies-][id$='  + frequencyClass +'-amount]:not([id$=donation-amount]) .form-item input');
+    // Iterate through amounts, set value if possible.
+    for (var i = 0, len = amounts.length; i < len; i++) {
+      if (amounts[i].value == frequency_default) {
+        // Uncheck all other values first.
+        $('div[id^=edit-frequencies-][id$=' + frequencyClass +'-amount]:not([id$=donation-amount]) .form-item input').attr('checked', false);
+        // Now set ours.
+        $(amounts[i]).attr('checked', 'checked');
+      }
+    }
+  }
+
+})(window.SpringboardSaf = window.SpringboardSaf || {}, jQuery);
+;
+jQuery.cookie=function(name,value,options){if(typeof value!='undefined'){options=options||{};if(value===null){value='';options.expires=-1}var expires='';if(options.expires&&(typeof options.expires=='number'||options.expires.toUTCString)){var date;if(typeof options.expires=='number'){date=new Date();date.setTime(date.getTime()+(options.expires*24*60*60*1000))}else{date=options.expires}expires='; expires='+date.toUTCString()}var path=options.path?'; path='+(options.path):'';var domain=options.domain?'; domain='+(options.domain):'';var secure=options.secure?'; secure':'';document.cookie=[name,'=',encodeURIComponent(value),expires,path,domain,secure].join('')}else{var cookieValue=null;if(document.cookie&&document.cookie!=''){var cookies=document.cookie.split(';');for(var i=0;i<cookies.length;i++){var cookie=jQuery.trim(cookies[i]);if(cookie.substring(0,name.length+1)==(name+'=')){cookieValue=decodeURIComponent(cookie.substring(name.length+1));break}}}return cookieValue}};
+;
+/**
+ * Store and parse market source data in cookies.
+ */
+Drupal.behaviors.marketSourceInit = {
+  attach: function(context) { (function($) {
+
+  $('body:not(.marketsource-processed)', context).each(function(i) {
+    if (typeof Drupal.settings.market_source === 'undefined' ||
+      typeof Drupal.settings.market_source.qs_keys === 'undefined') {
+        return;
+    }
+
+    var qs_keys = Drupal.settings.market_source.qs_keys;
+
+    // Create an element to parse the URI.
+    var uri = document.createElement('a');
+    uri.href = location.href;
+
+    /**
+     * Parse the raw querystring into an object.
+     */
+    var urlParams = {};
+    (function () {
+      var parsed,
+          regex = /([^&=]+)=?([^&]*)/g,
+          decode = function (value) {
+            // Regex for replacing addition symbol with a space and encode unencoded percent signs.
+            try {
+              return decodeURIComponent(value.replace(/\+/g, " "));
+            } catch (e) {
+              return decodeURIComponent(value.replace(/\+/g, " ").replace(/%(?!\d+)/g, '%25'));
+            }
+          },
+          querystring = uri.search.substring(1);
+      while (parsed = regex.exec(querystring)) {
+        var keyname = new String(decode(parsed[1]));
+        urlParams[keyname.toLowerCase()] = decode(parsed[2]);
+      }
+    })();
+
+    /**
+     * Sets a cookie.
+     */
+    var setCookie = function (name, value, noOverwrite) {
+      if (noOverwrite) {
+        // make sure this cookie doesn't exist already
+        var cookie = getCookie(name);
+        if (cookie != false && cookie != null && cookie != '') {
+          return;
+        }
+      }
+      if (typeof $.cookie !== 'undefined') {
+        name = 'market_source__' + name;
+        if (typeof Drupal.settings.market_source.cookie_domain !== 'undefined') {
+          $.cookie(name, value, { path: Drupal.settings.market_source.cookie_path, domain: Drupal.settings.market_source.cookie_domain, secure: true });
+        }
+        else {
+          $.cookie(name, value, { path: Drupal.settings.market_source.cookie_path, secure: true });
+        }
+      }
+    };
+
+    /**
+     * Reads data from a cookie.
+     */
+    var getCookie = function (name) {
+      var retval = false;
+      if (typeof $.cookie !== 'undefined') {
+        name = 'market_source__' + name;
+        retval = $.cookie(name);
+      }
+      return retval;
+    };
+
+    /**
+     * Check the querystring keys for existing cookie values.
+     */
+    var applyParams = function (params) {
+      for (var key in qs_keys) {
+        // Check the querystring for this key.
+        if (typeof params[key] !== 'undefined') {
+          qs_keys[key]['value'] = params[key];
+          if (qs_keys[key]['persistence'] != 'direct') {
+            // Save this value as a cookie.
+            setCookie(key, params[key], qs_keys[key]['persistence'] == 'on');
+          }
+        }
+        if (qs_keys[key]['persistence'] != 'direct') {
+          // Is there already a cookie set?
+          var cookie = getCookie(key);
+          if (cookie != false && cookie != null && cookie != '') {
+            // Store the cookie's value in our qs_keys.
+            qs_keys[key]['value'] = cookie;
+          }
+        }
+      }
+    };
+
+    /**
+     * Handle referrers as a special case.
+     */
+    var applyReferrer = function (preset) {
+      var referrer
+      if (typeof preset !== 'undefined' && typeof preset['referrer'] !== 'undefined') {
+        referrer = preset['referrer'];
+      }
+      else {
+        var referrer = document.referrer;
+      }
+
+      if (referrer == '') {
+        referrer = '(none)';
+      }
+      var cookie;
+      if (typeof qs_keys['initial_referrer']['value'] !== 'undefined') {
+        cookie = getCookie('initial_referrer');
+        if (cookie == false || cookie == null || cookie == '') {
+          // Store the referrer value in our qs_keys.
+          qs_keys['initial_referrer']['value'] = referrer;
+          // Set initial_referrer cookie.
+          setCookie('initial_referrer', qs_keys['initial_referrer']['value']);
+        } else {
+          qs_keys['initial_referrer']['value'] = cookie;
+        }
+      }
+      if (typeof qs_keys['referrer']['value'] !== 'undefined') {
+        if (referrer == '(none)') {
+          // browser isn't providing a referrer, so check for one from before
+          cookie = getCookie('referrer');
+          if (cookie != false && cookie != null && cookie != '') {
+            qs_keys['referrer']['value'] = cookie;
+          }
+        } else {
+          // Store the referrer value in our qs_keys.
+          qs_keys['referrer']['value'] = referrer;
+          // Set the referrer cookie.
+          setCookie('referrer', qs_keys['referrer']['value']);
+        }
+      }
+    };
+
+    /**
+     * Populate the market source fields in this page's webforms.
+     */
+    var marketSourceFormPopulate = function() {
+      if (typeof Drupal.settings.market_source.form_keys === 'undefined') {
+        return;
+      }
+
+      // Set a maximum length for each key's value.
+      var maxlength = 255;
+      if (typeof Drupal.settings.market_source.maxlength !== 'undefined') {
+        maxlength = Drupal.settings.market_source.maxlength;
+      }
+
+      // add search engine, search string, and user agent fields to qs_keys
+      var qs_keys = Drupal.settings.market_source.qs_keys;
+      if (typeof qs_keys['initial_referrer'] !== 'undefined' && typeof qs_keys['search_engine'] !== 'undefined'
+        && qs_keys['search_engine']['value'] == null
+      ) {
+        if (/http(s?)\:\/\/www\.google\./.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'Google';
+        }
+        else if (/http(s?)\:\/\/search\.msn/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'MSN';
+        }
+        else if (/http(s?)\:\/\/search\.yahoo/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'Yahoo!';
+        }
+        else if (/http(s?)\:\/\/www\.bing/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'Bing';
+        }
+        else if (/http(s?)\:\/\/msxml\.excite\.com/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'Excite';
+        }
+        else if (/http(s?)\:\/\/search\.lycos\.com/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'Lycos';
+        }
+        else if (/http(s?)\:\/\/www\.alltheweb\.com/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'All The Web';
+        }
+        else if (/http(s?)\:\/\/search\.aol\.com/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'AOL';
+        }
+        else if (/http(s?)\:\/\/(www)?\.ask\.co/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'Ask.com';
+        }
+        else if (/http(s?)\:\/\/www\.hotbot\.com/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'HotBot';
+        }
+        else if (/http(s?)\:\/\/www\.metacrawler\.com/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'Metacrawler';
+        }
+        else if (/http(s?)\:\/\/search\.earthlink\.net/.test(qs_keys['initial_referrer']['value'])) {
+          qs_keys['search_engine']['value'] = 'Earthlink';
+        }
+      }
+      if (typeof qs_keys['initial_referrer'] !== 'undefined' && typeof qs_keys['search_string'] !== 'undefined'
+        && qs_keys['search_string']['value'] == null
+      ) {
+        // just Bing and Yahoo!. Google hides its search strings behind a redirect these days.
+        if (/http(s?)\:\/\/search\.yahoo/.test(qs_keys['initial_referrer']['value'])) {
+          var matches = /(\?|\&)p\=([^\&]+)/.exec(qs_keys['initial_referrer']['value']);
+          if (matches != null && typeof(matches[2]) !== 'undefined') {
+            qs_keys['search_string']['value'] = decodeURIComponent(matches[2].replace(/\+/g, '%20'));
+          }
+        }
+        else if (/http(s?)\:\/\/www\.bing/.test(qs_keys['initial_referrer']['value'])) {
+          var matches = /(\?|\&)q\=([^\&]+)/.exec(qs_keys['initial_referrer']['value']);
+          if (matches != null && typeof(matches[2]) !== 'undefined') {
+            qs_keys['search_string']['value'] = decodeURIComponent(matches[2].replace(/\+/g, '%20'));
+          }
+        }
+      }
+      if (typeof qs_keys['user_agent'] !== 'undefined') {
+        qs_keys['user_agent']['value'] = navigator.userAgent;
+      }
+
+      // Iterate across all webforms on the page.
+      for (var form_id in Drupal.settings.market_source.form_keys) {
+        // Iterate across all form keys in this webform.
+        var form_keys = Drupal.settings.market_source.form_keys[form_id];
+        for (var key in form_keys) {
+          // Is this key set in qs_keys object?
+          if (typeof qs_keys[key]['value'] !== 'undefined') {
+            var value = qs_keys[key]['value'];
+            if (typeof value === 'string') {
+              value = value.substring(0, maxlength);
+            }
+            // Handle referrers as a special case.
+            if (key == 'initial_referrer' || key == 'referrer') {
+              if (value == '(none)') {
+                value = null;
+              }
+            }
+            // If the value is not null, set the value.
+            if (value != null) {
+              //var selector = 'form#' + form_id + ' #' + form_keys[key] + ':not(.marketsource-processed)';
+              var selector = 'form#' + form_id + ' input[name="' + form_keys[key] + '"]:not(.marketsource-processed)';
+
+              // Set the value.
+              $(selector, context)
+                .val(qs_keys[key]['value'])
+                .addClass('marketsource-processed');
+            }
+          }
+        }
+      }
+    };
+
+    var crossDomainMethod = function() {
+      //Detect browser support for CORS.
+      if ('withCredentials' in new XMLHttpRequest()) {
+        return 'json';
+      }
+      // IE-specific "CORS" XDR.
+      else if (typeof XDomainRequest !== "undefined") {
+        // IE9 doesn't seem to work with cookie values.
+        if (navigator.appVersion.indexOf("MSIE 9.") !== -1) {
+          return 'jsonp';
+        }
+        return 'json';
+      }
+      // Fallback is to use JSONP.
+      return 'jsonp';
+    };
+
+    // If the remote market source application is configured check that for ms values.
+    if (
+      Drupal.settings.market_source_remote
+      && Drupal.settings.market_source_remote.app_id
+      && Drupal.settings.market_source_remote.app_url
+    ) {
+      // Determine the data type for this request.
+      var dataType = crossDomainMethod();
+
+      // Create an array of values to be joined into the app request url.
+      var rmsUrl = [
+        Drupal.settings.market_source_remote.app_url,
+        Drupal.settings.market_source_remote.app_id,
+        (dataType === 'jsonp') ? 'get-jsonp' : 'get'
+      ];
+
+      // Create an array of values to be joined into the app request url's querystring.
+      var rmsParams = [
+        (dataType === 'jsonp') ? 'callback=?' : '',
+        'host=' + encodeURIComponent(uri['hostname'])
+      ];
+
+      $.ajax({
+        url: rmsUrl.join('/') + '?' + rmsParams.join('&'),
+        type: 'GET',
+        dataType: dataType,
+        xhrFields: {
+          withCredentials: true
+        },
+        success: function (data) {
+          applyParams(data);
+          applyParams(urlParams);
+          applyReferrer(data);
+          marketSourceFormPopulate()
+        },
+        error: function () { //Add these parameters to display the required response
+          applyParams(urlParams);
+          applyReferrer();
+          marketSourceFormPopulate();
+        }
+      });
+    }
+    // Else apply only the url parameters.
+    else {
+      applyParams(urlParams);
+      applyReferrer();
+      marketSourceFormPopulate();
+    }
+
+  }).addClass('marketsource-processed');
+
+  })(jQuery); }
+};
+;
+(function ($) {
+
+  // Makes ajax call to social share endpoint clicking share link
+  // Grabs social share referrer URL and appends it to link
+  // Opens popup social window.
+  // Prevents double share due to repreated link clcking or popup blockers.
+  Drupal.behaviors.sb_social = {
+    attach: function (context, settings) {
+      $('.social-share-link').each(function () {
+        var link = window.location.href;
+        // Drupal once to limit clicks on ajax page reload.
+        $(this).once('popup', function() {
+          $(this).click(function (e) {
+            // Setup some vars we use later.
+            var $elem = $(this);
+            var $url = Drupal.settings.basePath;
+            var service;
+
+            // Build social share ajax URLS.
+            if ($(this).hasClass('facebook')) {
+              $url += 'sb_social/share_event/facebook/';
+              service = 'facebook';
+            }
+            if ($(this).hasClass('twitter')) {
+              $url += 'sb_social/share_event/twitter/';
+              service = 'twitter';
+            }
+            if ($(this).hasClass('email')) {
+              $url += 'sb_social/share_event/email/';
+              service = 'email';
+            }
+            $url = $url + Drupal.settings.sb_social.id + '/';
+            $url = $url + Drupal.settings.sb_social.id_type + '/';
+            $url = $url + Drupal.settings.sb_social.market_source + '/';
+            if (typeof Drupal.settings.sb_social.submission_id !== 'undefined') {
+              $url = $url + '?sid=' + Drupal.settings.sb_social.submission_id;
+            }
+
+            // Make the ajax call to register the share with Drupal (and Salesforce).
+            jQuery.ajax({
+              beforeSend: function () {
+                // Don't do the ajax call if this link has already been clicked
+                // and the popup window has been blocked or is still open.
+                if ($elem.hasClass('social-processed')) {
+                  return false;
+                }
+              },
+              url: $url,
+              success: function (response) {
+                // The response is a link to the page, with a social
+                // share parameter appended.
+                // The shorten module has an option to 'www' instead of 'http'
+                // which breaks twitter integration. add http to links.
+                if (response.indexOf("http") === -1) {
+                  response = 'https://' + response;
+                }
+                link = encodeURIComponent(response);
+              },
+              // Don't use async because we have to wait for the updated link.
+              async: false
+            });
+
+            // Mark this link as clicked.
+            $(this).addClass('social-processed');
+
+            //Open the popup or email app.
+            var settings = Drupal.settings.sb_social;
+            switch (service) {
+              case 'twitter':
+                t = socialPopup(this, 'https://twitter.com/intent/tweet?text=' +  encodeURIComponent(settings.twitter_message) + '&url=' + link);
+                e.returnValue = false;
+                e.preventDefault();
+                break;
+              case  'facebook':
+                socialPopup(this, 'https://facebook.com/sharer.php?u=' + link);
+                e.returnValue = false;
+                e.preventDefault();
+                break;
+              case 'email':
+                $elem.attr('href', ' mailto:?subject=' + encodeURIComponent(settings.email_subject) + '&body=' + encodeURIComponent(settings.email_message) + "%0D%0A%0D%0A" + link);
+                $(this).removeClass('social-processed');
+                break;
+            }
+          });
+        });
+      });
+    }
+  };
+
+  // Popup opener.
+  var socialPopup = function (item, path) {
+
+    if (!path) {
+      console.log("path must not be empty");
+      return false;
+    }
+
+    var options = {
+      windowName: 'sbSocialPopup',
+      windowOptions: 'width=550,height=420',
+      callback: function (item) {
+        // The callback function gets fired (by setInterval) when the window
+        // is closed, thereby re-enabling subsequent ajax calls
+        // to get new social share IDs.
+        $(item).removeClass('social-processed');
+        window.sbSocialPopup = null;
+      }
+    };
+
+    // If the window already exists, just update the location, otherwise
+    // open one.
+    if (window.sbSocialPopup) {
+      // Firefox won't focus an already open window unless you close it first.
+      if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+        window.clearInterval(window.oauthInterval);
+        window.sbSocialPopup.close();
+        window.sbSocialPopup = window.open(path, options.windowName, options.windowOptions);
+      }
+      else {
+        window.sbSocialPopup.location.href = path;
+      }
+    }
+    else {
+      window.sbSocialPopup = window.open(path, options.windowName, options.windowOptions);
+    }
+    window.sbSocialPopup.focus();
+
+    //If the window is closed, re-enable the social share click event
+    //that was previously disabled to prevent double clicks.
+    var x = 0;
+    window.oauthInterval = window.setInterval(function () {
+      x++;
+      if ((window.sbSocialPopup && window.sbSocialPopup.closed) || x === 30) {
+        window.clearInterval(window.oauthInterval);
+        options.callback(item);
+      }
+    }, 1000, x);
+  };
+
+})(jQuery);
+
+;
+(function($) {
+  Drupal.behaviors.zipLookup = {
+    attach: function(context, settings) {
+      var fields = Drupal.settings.zip_lookup || {};
+      if (fields.ids) {
+        $('form.webform-client-form').each(function(i, v) {
+          configUpdateCityAndStateByZip(fields.ids.zip, fields.ids.city, fields.ids.state, fields.ids.country, v);
+        });
+      }
+
+      function configUpdateCityAndStateByZip(zipId, cityId, stateId, countryId, v) {
+        var zipObj = $(zipId + " input", v);
+        var cityObj = $(cityId + " input", v);
+        var stateObj = $(stateId + " select", v);
+        var skipCountry = false;
+        if (countryId == false) {
+         skipCountry = true;
+         var countryObj = {};
+         countryObj.val = function() {
+          return 'US';
+         }
+        }
+        else {
+          var countryObj = $(countryId + " select", v);
+        }
+        // Make sure only 1 form field matches each of the ID parameters supplied.
+        if (zipObj.length == 1 && cityObj.length == 1 && stateObj.length == 1 && (countryObj.length == 1 || skipCountry == true)) {
+          zipObj.blur(function() {
+            // Only make the ajax request if we've got a valid 5-digit zip code, US is the selected country, and either the city or state field are empty.
+            if ((/^\d{5}$/.test($(this).val())) && countryObj.val() == 'US' && (cityObj.val().trim() === "" || stateObj.val().trim() === "")) {
+              $.ajax({
+                url: "/zip_lookup/autopop-city-state-by-zip",
+                dataType: "json",
+                type: "POST",
+                data: {
+                  zip: $(this).val()
+                }
+              }).done(function(data) {
+                if (cityObj.val().trim() == "") {
+                  cityObj.val(data.city);
+                }
+                if (stateObj.val().trim() == "") {
+                  // Trigger change for Florida.
+                  stateObj.val(data.state_id).change();
+
+                  // Overwrite the HTML of the span used to display the select box value on responsive forms
+                  var targetOption = stateObj.find("option[value=" + data.state_id + "]");
+                  stateObj.next().filter(".custom-select").find("span > span").html(targetOption.html());
+                }
+              });
+            }
+          });
+        }
+      }
+    },
+
+  };
+
+})(jQuery);
+;
+(function ($) {
+  Drupal.behaviors.formEditProtection = {
+    attach: function (context, settings) {
+      $(document).ready(function() {
+        $(Drupal.settings.formEditProtectionSelector, context).once(function () {
+          var actionTaken = false;
+          var targetForm = $(this);
+          var originalFormHTML = targetForm.html();
+          function preventExitCheck() {
+            if (actionTaken || originalFormHTML != targetForm.html()) { // Detect HTML-related form changes
+              return 'You must submit this form to save its changes.';
+            }
+            return '';
+          }
+          $(this).find('input, textarea').keydown(function () {
+            actionTaken = true;
+          });
+          $(this).find('input').click(function () {
+            actionTaken = true;
+          });
+          $(this).find('select, checkbox, radio').change(function () {
+            actionTaken = true;
+          });
+          // Prevent false-positives for refresh or clicking links:
+          $(document).keydown(function(e) {
+            if (e.keyCode == 82 && (e.ctrlKey || e.metaKey)) {
+              if (preventExitCheck() == '') {
+                window.onbeforeunload = null;
+              }
+            }
+          });
+          $('a').click(function () {
+            if (preventExitCheck() == '') {
+              window.onbeforeunload = null;
+            } 
+          });
+          $(window).on('beforeunload', function() {
+            return preventExitCheck();
+          });
+          $(this).submit(function () {
+            window.onbeforeunload = null;
+          });
+        });
+      });
+    }
+  };
+})(jQuery);
+;
+(function($) {
+
+  Drupal.behaviors.braintreePaypal = {
+    attach: function(context, settings) {
+      settings = settings.braintree;
+      settings.paypal.autofill = 'always';
+      $(document).on('braintree.methodChange', function(event, paymentMethod) {
+        if (paymentMethod == 'paypal') {
+          compactPaypal(true);
+        }
+        else if (paymentMethod == 'applepay' && settings.hasOwnProperty('applepay') && settings.applepay.hasOwnProperty('compact') && settings.applepay.compact === true) {
+          // If the selected method is applepay, check if applepay is set for compact mode--if this is the case, then we take no action since the corresponding
+          // version of this file for applepay will handle the compacting logic.
+        }
+        else {
+          // We are switching from paypal to a method that is not set to compact, so show all the form fields.
+          compactPaypal(false);
+        }
+      });
+      $('body').once('braintree-autofilled', function () {
+        $(document).on('braintree.autoFilled', function(event, btInstance, payLoad, autofilled) {
+          if (btInstance.settings.currentPaymentMethod == 'paypal' && autofilled && !btInstance.btPaypalAutoSubmitted) {
+            populatePhone(payLoad);
+            if (verifyPaypalFields(payLoad)) {
+              // Set this variable so the main script knows we submitted.
+              btInstance.btPaypalAutoSubmitted = true;
+
+              btInstance.$form.submit();
+            }
+            else {
+              // Missing required fields, expose them.
+              compactPaypal(false);
+            }
+          }
+        });
+      });
+
+      var verifyPaypalFields = function(obj) {
+        var remoteDonorFields = ['email', 'firstName', 'lastName', 'address', 'state', 'zip'];
+        for (var i = 0; i < remoteDonorFields.length; i++) {
+          if (!obj.hasOwnProperty(remoteDonorFields[i]) || !obj[remoteDonorFields[i]]) {
+            return false;
+          }
+        }
+        return true;
+      };
+
+      var populatePhone = function(obj) {
+        var phone = null;
+        var billingPhone = $("#webform-component-billing-information input[name$='sbp_phone]']");
+        var donorPhone = $("#webform-component-donor-information input[name$='sbp_phone]']");
+        if (billingPhone.length) {
+          phone = $(billingPhone);
+        }
+        if (donorPhone.length) {
+          phone = $(donorPhone);
+        }
+        if (phone && obj.hasOwnProperty('phone') && obj.phone != '') {
+          $(phone).val(obj.phone);
+        }
+      };
+
+      var compactPaypal = function(collapse) {
+        if (settings.paypal && settings.paypal.compact && hasDefaultFields()) {
+          var fieldsetsVisible = $('#webform-component-donor-information:visible, #webform-component-billing-information:visible').length > 0;
+          var currentState = settings.paypal.collapsed;
+          var layout = settings.paypal.form_layout || false;
+          if (collapse && fieldsetsVisible) {
+            if (layout == 'two_column_donation') {
+              $('#left').hide();
+            }
+            $('#webform-component-donor-information').hide();
+            $('#webform-component-billing-information').hide();
+            settings.paypal.collapsed = true;
+            if (settings.applepay !== undefined) {
+              settings.applepay.collapsed = true;
+            }
+          } else if (!collapse && !fieldsetsVisible) {
+            if (layout == 'two_column_donation') {
+              $('#left').show();
+            }
+            $('#webform-component-donor-information').show();
+            $('#webform-component-billing-information').show();
+            settings.paypal.collapsed = false;
+            if (settings.applepay !== undefined) {
+              settings.applepay.collapsed = false;
+            }
+          }
+        }
+      };
+
+      var hasDefaultFields = function() {
+        var fundraiserDefaultFields = {
+          donorDefaults: [
+            'first_name',
+            'last_name',
+            'mail',
+          ],
+          billingDefaults: [
+            'address',
+            'address_line_2',
+            'city',
+            'country',
+            'state',
+            'zip',
+          ],
+        };
+
+        var notHidden = function() {
+          return $(this).attr('type') != 'hidden';
+        };
+
+        var donorInfo = $('#webform-component-donor-information :input').filter(notHidden);
+
+        var billingInfo = $('#webform-component-billing-information :input').filter(notHidden);
+        var onlyDefaults = true;
+        $.each(donorInfo, function(key, value) {
+          var n = $(value).attr('name').match(/[^[\]]+(?=])/g)[1];
+          if ($.inArray(n, fundraiserDefaultFields.donorDefaults) < 0 && n != 'sbp_phone') {
+            onlyDefaults = false;
+            return;
+          }
+        });
+        $.each(billingInfo, function(key, value) {
+          var n = $(value).attr('name').match(/[^[\]]+(?=])/g)[1];
+          if ($.inArray(n, fundraiserDefaultFields.billingDefaults) < 0 && n != 'sbp_phone') {
+            onlyDefaults = false;
+            return;
+          }
+        });
+        return onlyDefaults;
+      };
+
+
+    },
+
+  };
+})(jQuery);
+;
+/**
+ * @file
+ */
+
+(function($) {
+  Drupal.behaviors.springboardForms = {
+    attach: function (context, settings) {
+
+      $('.webform-client-form #edit-submit').once(function() {
+        $('.webform-client-form #edit-submit').click(function() {
+          var  button = $(this);
+          // Disable the button. This prevents double/triple mouse clicking.
+          if ($('form.webform-client-form')[0].checkValidity) {
+            if ($('form.webform-client-form')[0].checkValidity()) {
+              $(this).hide();
+              $('.fundraiser_submit_message').hide();
+              $('.webform-user-thank-you').remove();
+              $(this).after('<div class="webform-user-wrapper"><p class="webform-user-thank-you">' + Drupal.t("Thank you, your submission is processing") + '.</p><div class="webform-user-spinner"></div></div>');
+            }
+          }
+          else {
+            button.hide();
+            $('.fundraiser_submit_message').hide();
+            button.after('<div class="webform-user-wrapper"><p class="webform-user-thank-you">' + Drupal.t("Thank you, your submission is processing") + '.</p><div class="webform-user-spinner"></div></div>');
+          }
+        });
+      });
+    } // attach.function
+    // drupal.behaviors.
+  }
+})(jQuery);
+;
+(function($) {
+    Drupal.behaviors.springboard_cookie = {
+        attach: function(context, settings) {
+            $('body').once(function() {
+                // Is the Springboard cookie set on this client?
+                var cookie = $.cookie(Drupal.settings.springboard_cookie.name);
+                if (!cookie) {
+                    // No cookie, so make sure cookies are enabled.
+                    $.cookie('cookies_enabled', '1', { path: '/' });
+                    if ($.cookie('cookies_enabled') == '1') {
+                        // Call out to the server for a cookie.
+                        $.post(
+                            '/js/springboard_cookie/new_cookie',
+                            {
+                                js_callback: 'new_cookie',
+                                js_module: 'springboard_cookie'
+                            },
+                            function(data, status) {
+                                // Save the cookie to this client.
+                                var settings = {
+                                    expires: parseInt(data.expires),
+                                    path: data.path
+                                };
+                                if (Drupal.settings.springboard_cookie.domain != '') {
+                                    settings.domain = Drupal.settings.springboard_cookie.domain;
+                                }
+                                $.cookie(
+                                    Drupal.settings.springboard_cookie.name,
+                                    data.cookie,
+                                    settings
+                                );
+                            }
+                        );
+                    }
+                }
+
+            })
+        }
+    };
+})(jQuery);;
+/*global jQuery */
+/*jshint browser:true */
+/*!
+* FitVids 1.1
+*
+* Copyright 2013, Chris Coyier - http://css-tricks.com + Dave Rupert - http://daverupert.com
+* Credit to Thierry Koblentz - http://www.alistapart.com/articles/creating-intrinsic-ratios-for-video/
+* Released under the WTFPL license - http://sam.zoy.org/wtfpl/
+*
+*/
+
+(function( $ ){
+
+  "use strict";
+
+  $.fn.fitVids = function( options ) {
+    var settings = {
+      customSelector: null
+    };
+
+    if(!document.getElementById('fit-vids-style')) {
+      // appendStyles: https://github.com/toddmotto/fluidvids/blob/master/dist/fluidvids.js
+      var head = document.head || document.getElementsByTagName('head')[0];
+      var css = '.fluid-width-video-wrapper{width:100%;position:relative;padding:0;}.fluid-width-video-wrapper iframe,.fluid-width-video-wrapper object,.fluid-width-video-wrapper embed {position:absolute;top:0;left:0;width:100%;height:100%;}';
+      var div = document.createElement('div');
+      div.innerHTML = '<p>x</p><style id="fit-vids-style">' + css + '</style>';
+      head.appendChild(div.childNodes[1]);
+    }
+
+    if ( options ) {
+      $.extend( settings, options );
+    }
+
+    return this.each(function(){
+      var selectors = [
+        "iframe[src*='player.vimeo.com']",
+        "iframe[src*='youtube.com']",
+        "iframe[src*='youtube-nocookie.com']",
+        "iframe[src*='kickstarter.com'][src*='video.html']",
+        "object",
+        "embed"
+      ];
+
+      if (settings.customSelector) {
+        selectors.push(settings.customSelector);
+      }
+
+      var $allVideos = $(this).find(selectors.join(','));
+      $allVideos = $allVideos.not("object object"); // SwfObj conflict patch
+
+      $allVideos.each(function(){
+        var $this = $(this);
+        if (this.tagName.toLowerCase() === 'embed' && $this.parent('object').length || $this.parent('.fluid-width-video-wrapper').length) { return; }
+        var height = ( this.tagName.toLowerCase() === 'object' || ($this.attr('height') && !isNaN(parseInt($this.attr('height'), 10))) ) ? parseInt($this.attr('height'), 10) : $this.height(),
+            width = !isNaN(parseInt($this.attr('width'), 10)) ? parseInt($this.attr('width'), 10) : $this.width(),
+            aspectRatio = height / width;
+        if(!$this.attr('id')){
+          var videoID = 'fitvid' + Math.floor(Math.random()*999999);
+          $this.attr('id', videoID);
+        }
+        $this.wrap('<div class="fluid-width-video-wrapper"></div>').parent('.fluid-width-video-wrapper').css('padding-top', (aspectRatio * 100)+"%");
+        $this.removeAttr('height').removeAttr('width');
+      });
+    });
+  };
+// Works with either jQuery or Zepto
+})( window.jQuery || window.Zepto );
+;
+(function ($) {
+
+/**
+ * A progressbar object. Initialized with the given id. Must be inserted into
+ * the DOM afterwards through progressBar.element.
+ *
+ * method is the function which will perform the HTTP request to get the
+ * progress bar state. Either "GET" or "POST".
+ *
+ * e.g. pb = new progressBar('myProgressBar');
+ *      some_element.appendChild(pb.element);
+ */
+Drupal.progressBar = function (id, updateCallback, method, errorCallback) {
+  var pb = this;
+  this.id = id;
+  this.method = method || 'GET';
+  this.updateCallback = updateCallback;
+  this.errorCallback = errorCallback;
+
+  // The WAI-ARIA setting aria-live="polite" will announce changes after users
+  // have completed their current activity and not interrupt the screen reader.
+  this.element = $('<div class="progress" aria-live="polite"></div>').attr('id', id);
+  this.element.html('<div class="bar"><div class="filled"></div></div>' +
+                    '<div class="percentage"></div>' +
+                    '<div class="message">&nbsp;</div>');
+};
+
+/**
+ * Set the percentage and status message for the progressbar.
+ */
+Drupal.progressBar.prototype.setProgress = function (percentage, message) {
+  if (percentage >= 0 && percentage <= 100) {
+    $('div.filled', this.element).css('width', percentage + '%');
+    $('div.percentage', this.element).html(percentage + '%');
+  }
+  $('div.message', this.element).html(message);
+  if (this.updateCallback) {
+    this.updateCallback(percentage, message, this);
+  }
+};
+
+/**
+ * Start monitoring progress via Ajax.
+ */
+Drupal.progressBar.prototype.startMonitoring = function (uri, delay) {
+  this.delay = delay;
+  this.uri = uri;
+  this.sendPing();
+};
+
+/**
+ * Stop monitoring progress via Ajax.
+ */
+Drupal.progressBar.prototype.stopMonitoring = function () {
+  clearTimeout(this.timer);
+  // This allows monitoring to be stopped from within the callback.
+  this.uri = null;
+};
+
+/**
+ * Request progress data from server.
+ */
+Drupal.progressBar.prototype.sendPing = function () {
+  if (this.timer) {
+    clearTimeout(this.timer);
+  }
+  if (this.uri) {
+    var pb = this;
+    // When doing a post request, you need non-null data. Otherwise a
+    // HTTP 411 or HTTP 406 (with Apache mod_security) error may result.
+    $.ajax({
+      type: this.method,
+      url: this.uri,
+      data: '',
+      dataType: 'json',
+      success: function (progress) {
+        // Display errors.
+        if (progress.status == 0) {
+          pb.displayError(progress.data);
+          return;
+        }
+        // Update display.
+        pb.setProgress(progress.percentage, progress.message);
+        // Schedule next timer.
+        pb.timer = setTimeout(function () { pb.sendPing(); }, pb.delay);
+      },
+      error: function (xmlhttp) {
+        pb.displayError(Drupal.ajaxError(xmlhttp, pb.uri));
+      }
+    });
+  }
+};
+
+/**
+ * Display errors on the page.
+ */
+Drupal.progressBar.prototype.displayError = function (string) {
+  var error = $('<div class="messages error"></div>').html(string);
+  $(this.element).before(error).hide();
+
+  if (this.errorCallback) {
+    this.errorCallback(this);
+  }
+};
+
+})(jQuery);
+;
+(function ($) {
+  Drupal.behaviors.commerceLitleMetrix = {
+    attach: function (context, settings) {
+      if (typeof(settings.metrixThreat) != "undefined") {
+        var session_id_input = $('input[name*="[payment_fields][credit][session_id]"]');
+        var container = $('.metrix-container');
+        var metrixSettings = settings.metrixThreat;
+        if (!metrixSettings.dev_mode) {
+          if (!Date.now) {
+            Date.now = function () {
+              return new Date().getTime();
+            }
+          }
+          var time = Date.now();
+          var min = parseInt(0, 10);
+          var max = parseInt(time, 10);
+          var rand = Math.floor(Math.random() * (max - min + 1)) + min;
+          var sessionId = metrixSettings.prefix + '-' + rand;
+        }
+        else {
+          sessionId = metrixSettings.prefix + '-' + metrixSettings.dev_mode_id;
+        }
+
+        session_id_input.val(sessionId);
+
+        var template = '<div style="background:url(https://' + metrixSettings.subdomain + '/fp/clear.png?org_id=' + metrixSettings.org_id + '&amp;session_id=' + sessionId + '&amp;m=1)"></div>';
+        template += '<img src="https://' + metrixSettings.subdomain + '/fp/clear.png?org_id=' + metrixSettings.org_id + '&amp;session_id=' + sessionId + '&amp;m=2" />';
+        template += '<script src="https://' + metrixSettings.subdomain + '/fp/check.js?org_id=' + metrixSettings.org_id + '&amp;session_id=' + sessionId + '&amp;pageid=##' + metrixSettings.page_id + '##"></script>';
+        template += '<object type="application/x-shockwave-flash" data="https://' + metrixSettings.subdomain + '/fp/fp.swf?org_id=' + metrixSettings.org_id + '&amp;session_id=' + sessionId + '" width="1" height="1">';
+        template += '<param name="movie" value="https://' + metrixSettings.subdomain + '/fp/fp.swf?org_id=' + metrixSettings.org_id + '&amp;session_id=' + sessionId + '" /><param name="wmode" value="transparent" /> <div></div></object>';
+
+        container.html(template);
+      }
+
+    }
+  }
+})(jQuery);;
+
+/**
+ * JavaScript behaviors for the front-end display of webforms.
+ */
+
+(function ($) {
+
+Drupal.behaviors.webform = Drupal.behaviors.webform || {};
+
+Drupal.behaviors.webform.attach = function(context) {
+  // Calendar datepicker behavior.
+  Drupal.webform.datepicker(context);
+};
+
+Drupal.webform = Drupal.webform || {};
+
+Drupal.webform.datepicker = function(context) {
+  $('div.webform-datepicker').each(function() {
+    var $webformDatepicker = $(this);
+    var $calendar = $webformDatepicker.find('input.webform-calendar');
+
+    // Ensure the page we're on actually contains a datepicker.
+    if ($calendar.length == 0) { 
+      return;
+    }
+
+    var startDate = $calendar[0].className.replace(/.*webform-calendar-start-(\d{4}-\d{2}-\d{2}).*/, '$1').split('-');
+    var endDate = $calendar[0].className.replace(/.*webform-calendar-end-(\d{4}-\d{2}-\d{2}).*/, '$1').split('-');
+    var firstDay = $calendar[0].className.replace(/.*webform-calendar-day-(\d).*/, '$1');
+    // Convert date strings into actual Date objects.
+    startDate = new Date(startDate[0], startDate[1] - 1, startDate[2]);
+    endDate = new Date(endDate[0], endDate[1] - 1, endDate[2]);
+
+    // Ensure that start comes before end for datepicker.
+    if (startDate > endDate) {
+      var laterDate = startDate;
+      startDate = endDate;
+      endDate = laterDate;
+    }
+
+    var startYear = startDate.getFullYear();
+    var endYear = endDate.getFullYear();
+
+    // Set up the jQuery datepicker element.
+    $calendar.datepicker({
+      dateFormat: 'yy-mm-dd',
+      yearRange: startYear + ':' + endYear,
+      firstDay: parseInt(firstDay),
+      minDate: startDate,
+      maxDate: endDate,
+      onSelect: function(dateText, inst) {
+        var date = dateText.split('-');
+        $webformDatepicker.find('select.year, input.year').val(+date[0]).trigger('change');
+        $webformDatepicker.find('select.month').val(+date[1]).trigger('change');
+        $webformDatepicker.find('select.day').val(+date[2]).trigger('change');
+      },
+      beforeShow: function(input, inst) {
+        // Get the select list values.
+        var year = $webformDatepicker.find('select.year, input.year').val();
+        var month = $webformDatepicker.find('select.month').val();
+        var day = $webformDatepicker.find('select.day').val();
+
+        // If empty, default to the current year/month/day in the popup.
+        var today = new Date();
+        year = year ? year : today.getFullYear();
+        month = month ? month : today.getMonth() + 1;
+        day = day ? day : today.getDate();
+
+        // Make sure that the default year fits in the available options.
+        year = (year < startYear || year > endYear) ? startYear : year;
+
+        // jQuery UI Datepicker will read the input field and base its date off
+        // of that, even though in our case the input field is a button.
+        $(input).val(year + '-' + month + '-' + day);
+      }
+    });
+
+    // Prevent the calendar button from submitting the form.
+    $calendar.click(function(event) {
+      $(this).focus();
+      event.preventDefault();
+    });
+  });
+}
+
+})(jQuery);
+;
+(function (FrTotal, FrFee, $, undefined) {
+
+  // Dynamically replaces the [js:formatted-donation-amount] token
+  Drupal.behaviors.fundraiser_total = {
+    attach: function (context, settings) {
+
+      // Check if there is a token on the page.
+      if (!$('span.js-formatted-donation-amount').length) {
+        return;
+      }
+
+      // Start the token replacement.
+      FrTotal.initializeVars();
+      FrTotal.updateTotal(settings);
+
+      // Define the event handlers for the total amount re-calculation.
+      $('body').once('fundraiser-total', function() {
+        FrTotalSetClickEvents(settings);
+      });
+    }
+  };
+
+  // Find the fields we need to calulate the total.
+  FrTotal.initializeVars = function () {
+    FrTotal.processingFeeField = $('input[name*="[processing_fee]"]');
+    FrTotal.paymentMethodFields = $('input[name*="[payment_method]"]');
+    FrTotal.recursMonthlyField = $('input[name*="recurs_monthly"]');
+    FrTotal.otherAmountField = $('input[name*="[other_amount]"]');
+    FrTotal.recurringOtherAmountField = $('input[name*="[recurring_other_amount]"]');
+    FrTotal.donationAmountFields = $('input[name*="donation][amount]"]');
+    FrTotal.donationRecurringAmountFields = $('input[name*="donation][recurring_amount]"]');
+    FrTotal.donationQuarterlyFreqAmounts = $('input[name*="frequencies[sb_fs_quarterly_amount]"]');
+    FrTotal.donationSemiAnnualFreqAmounts = $('input[name*="frequencies[sb_fs_semi_amount]"]');
+    FrTotal.donationAnnuallyFreqAmounts = $('input[name*="frequencies[sb_fs_annually_amount]"]');
+  };
+
+  // Retrieve the current donation amount from webform fields.
+  FrTotal.getCurrentAmount = function (settings) {
+
+    var recursSelected = false;
+    var recursSelect = FrTotal.recursMonthlyField;
+    if (recursSelect) {
+      var recursSelectType = recursSelect.attr('type');
+    }
+    var currentAmount = 0;
+    // fundraiser.recurring_settings does not exist on billing update form.
+    var dualAsk = (settings.fundraiser.recurring_settings) ? settings.fundraiser.recurring_settings.recurring_dual_ask_amounts : false;
+
+    if (!settings.fundraiserTickets) {
+      if (recursSelectType && recursSelectType == 'hidden') {
+        if (recursSelect.val() !== 'NO_RECURR') {
+          recursSelected = recursSelect.val();
+        }
+      }
+      else {
+        if (FrTotal.recursMonthlyField && FrTotal.recursMonthlyField.filter(':checked').val()) {
+          recursSelected = FrTotal.recursMonthlyField.filter(':checked').val();
+        }
+      }
+
+      if ((!recursSelected || recursSelected === 'NO_RECURR' || (dualAsk == false && recursSelected))) {
+
+        currentAmount = FrTotal.donationAmountFields.filter(":checked").val();
+
+        if (currentAmount == 'other') {
+          currentAmount = FrTotal.otherAmountField.val();
+        }
+        else if (
+          typeof currentAmount === 'undefined'
+          && FrTotal.otherAmountField.length
+          && ('other' == FrTotal.donationAmountFields.filter(":hidden").val() || !FrTotal.donationAmountFields.length)
+        ) {
+          currentAmount = FrTotal.otherAmountField.val();
+        }
+      }
+      else {
+        if (recursSelected === 'recurs') {
+          currentAmount = FrTotal.donationRecurringAmountFields.filter(':checked').val();
+        }
+
+        if (recursSelected !== 'NO_RECURR') {
+          currentAmount = FrTotal.donationRecurringAmountFields.filter(':checked').val();
+        }
+
+        if (settings.fundraiser.multi_frequency) {
+
+          if (recursSelected === 'sb_fs_quarterly') {
+            currentAmount = FrTotal.donationQuarterlyFreqAmounts.filter(':checked').val();
+          }
+
+          if (recursSelected === 'sb_fs_semi') {
+            currentAmount = FrTotal.donationSemiAnnualFreqAmounts.filter(':checked').val();
+          }
+
+          if (recursSelected === 'sb_fs_annually') {
+            currentAmount = FrTotal.donationAnnuallyFreqAmounts.filter(':checked').val();
+          }
+        }
+
+        if (currentAmount == 'other') {
+          currentAmount = FrTotal.recurringOtherAmountField.val();
+        }
+        else if (
+          typeof currentAmount === 'undefined'
+          && FrTotal.recurringOtherAmountField.length
+          && ('other' == FrTotal.donationRecurringAmountFields.filter(":hidden").val() || !FrTotal.donationRecurringAmountFields.length)
+        ) {
+          // damn when does this happen?
+          currentAmount = FrTotal.recurringOtherAmountField.val();
+        }
+      }
+    }
+
+    if (settings.fdNid) {
+      currentAmount = Drupal.fundraiserDesignations.prototype.calcTotalMinusFee();
+    }
+
+    if (settings.fundraiserTickets) {
+      currentAmount = Drupal.fundraiserTickets.prototype.calcTotalMinusFee();
+    }
+
+    if (isNaN(parseFloat(currentAmount))) {
+      currentAmount = 0;
+    }
+    return currentAmount;
+  };
+
+  // Update the total.
+  FrTotal.updateTotal = function (settings) {
+
+    if (settings.fundraiser.next_donation_amount) {
+      // We're on the sustainers billing update form.
+      var donationAmount = settings.fundraiser.next_donation_amount;
+    }
+    else {
+      // We're on a donation form.
+      donationAmount = FrTotal.getCurrentAmount(settings);
+      if (typeof(donationAmount) == "undefined") {
+        donationAmount = 0;
+      }
+    }
+
+    if (settings.fundraiserTickets) {
+      FrTotal.tickets = Drupal.fundraiserTickets.prototype;
+      if (typeof(settings.fundraiser.fundraiser_fee) == "undefined") {
+        var addon = FrTotal.tickets.calcExtra();
+        donationAmount = donationAmount + addon;
+      }
+    }
+
+    if (typeof(settings.fundraiser.fundraiser_fee) != "undefined") {
+
+      if (FrTotal.paymentMethodFields.attr('type') != "hidden") {
+        var $method = FrTotal.paymentMethodFields.filter(':checked').val();
+      }
+      else {
+        $method = FrTotal.paymentMethodFields.val();
+      }
+
+      if (typeof(settings.fundraiser.fundraiser_fee[$method]) !== "undefined" || $method === 'free_tickets') {
+        if ($method !== 'free_tickets') {
+          var feeSettings = settings.fundraiser.fundraiser_fee[$method];
+          var processingFee = FrFee.getFee(feeSettings, donationAmount);
+        }
+        if (settings.fundraiserTickets) {
+          addon = FrTotal.tickets.calcExtra();
+          donationAmount = donationAmount + addon;
+        }
+        if ($.isNumeric(processingFee) && FrTotal.processingFeeField.is(':checked')) {
+          donationAmount = parseFloat(donationAmount) + parseFloat(processingFee);
+        }
+      }
+    }
+
+    if (typeof(settings.premiums) !== "undefined") {
+      // Check for shipping charge, if present add to donation amount.
+      var premiumShipping = $('.form-item-selected-premium-id input:checked').parents('.form-type-radio').siblings('.shipping-amount').data('attribute-shipping-amount');
+
+      if (premiumShipping) {
+        donationAmount = parseFloat(premiumShipping.replace("$", "")) + parseFloat(donationAmount);
+      }
+    }
+
+    if ($('span.js-formatted-donation-amount').length) {
+      FrTotal.replaceToken(donationAmount);
+    }
+
+    // Trigger for other modules to hook into the calculation (Togetherpay,
+    // hide/show disaclaimer based on total amount).
+    $(document).trigger("donation-total-update", [donationAmount]);
+
+    return donationAmount;
+  };
+
+  // Replace the token.
+  FrTotal.replaceToken = function(donationAmount) {
+    var settings = Drupal.settings;
+    var symbol = settings.fundraiser.currency.symbol;
+    var dec = settings.fundraiser.currency.decimals;
+    var sep = settings.fundraiser.currency.decimal_separator;
+    var thou = settings.fundraiser.currency.thousands_separator;
+    var newAmount = symbol + (parseFloat(donationAmount)).formatMoney(dec, sep, thou);
+    $('span.js-formatted-donation-amount').text(newAmount);
+  };
+
+  function FrTotalSetClickEvents(settings) {
+    FrTotal.paymentMethodFields.on('change', function () {
+      FrTotal.updateTotal(settings);
+    });
+    if (typeof FrTotal.processingFeeField !== "undefined") {
+      FrTotal.processingFeeField.on('change', function () {
+        FrTotal.updateTotal(settings);
+      });
+    }
+    FrTotal.recursMonthlyField.on('change', function () {
+      FrTotal.updateTotal(settings);
+    });
+    FrTotal.otherAmountField.on('keyup', function () {
+      FrTotal.updateTotal(settings);
+    });
+    FrTotal.otherAmountField.on('focus', function () {
+      FrTotal.updateTotal(settings);
+    });
+    FrTotal.recurringOtherAmountField.on('keyup', function () {
+      FrTotal.updateTotal(settings);
+    });
+    FrTotal.donationAmountFields.on('change', function () {
+      FrTotal.updateTotal(settings);
+    });
+    FrTotal.donationRecurringAmountFields.on('change', function () {
+      FrTotal.updateTotal(settings);
+    });
+    FrTotal.donationQuarterlyFreqAmounts.on('change', function(){
+      FrTotal.updateTotal(settings);
+    });
+    FrTotal.donationSemiAnnualFreqAmounts.on('change', function(){
+      FrTotal.updateTotal(settings);
+    });
+    FrTotal.donationAnnuallyFreqAmounts.on('change', function(){
+      FrTotal.updateTotal(settings);
+    });
+  }
+
+  Number.prototype.formatMoney = function(c, d, t) {
+    var n = this, c = isNaN(c = Math.abs(c)) ? 2 : c, d = d == undefined ? "," : d, t = t == undefined ? "." : t, s = n < 0 ? "-" : "", i = parseInt(n = Math.abs(+n || 0).toFixed(c)) + "", j = (j = i.length) > 3 ? j % 3 : 0;
+    return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
+  };
+
+})(
+  window.FundraiserTotal = window.FundraiserTotal || {},
+  window.FundraiserFee = window.FundraiserFee || {},
+  jQuery);
+;
+(function ($) {
+
+  Drupal.behaviors.floridaDisclaimer = {
+    attach: function (context, settings) {
+      settings = settings || Drupal.settings;
+
+      $('body').once(function(){
+        showDisclaimer();
+      });
+
+      $('#edit-submitted-billing-information-state').change(function() {
+        showDisclaimer();
+      });
+
+      // Respond to custom autofill trigger.
+      $(document).on('secure_prepop_autofilled', function() {
+        showDisclaimer();
+      });
+
+      function showDisclaimer() {
+        if ($('#edit-submitted-billing-information-state').length && $('#edit-submitted-billing-information-state option:selected').text() == 'Florida') {
+          $('p.donation_disclaimer').text(settings.florida_disclaimer.disclaimer_text);
+        }
+        else {
+          $('p.donation_disclaimer').text('');
+        }
+      }
+
+    }
+  };
+
+})(jQuery);
+;
+(function (FrFee, $, undefined) {
+
+  // Functions shared by the frontend and backend javascript.
+  FrFee.appendMessage = function(processingFee, donationAmount, feeCheckboxControl, feeSettings) {
+
+    var settings = Drupal.settings;
+    var symbol = settings.fundraiser.currency.symbol;
+    var dec = settings.fundraiser.currency.decimals;
+    var sep = settings.fundraiser.currency.decimal_separator;
+    var thou = settings.fundraiser.currency.thousands_separator;
+    var newAmount = symbol + (parseFloat(processingFee) + parseFloat(donationAmount)).formatMoney(dec, sep, thou);
+    var message = feeSettings.fee_message.replace('[fundraiser-fee-total]', newAmount);
+    feeCheckboxControl.append('<div class="processing-fee-message">' + message + '</div>');
+
+  };
+
+  FrFee.getFee = function(feeSettings, donationAmount){
+
+    var processingFee = 0;
+
+    if (feeSettings.fee_percentage.length) {
+      var feePercentage =  feeSettings.fee_percentage * 0.01;
+      processingFee = parseFloat((donationAmount * feePercentage))
+    }
+
+    if (feeSettings.fee_dollar_amount.length && donationAmount != 0) {
+      processingFee = processingFee + parseFloat(feeSettings.fee_dollar_amount)
+    }
+
+    processingFee = processingFee.toFixed(Drupal.settings.fundraiser.currency.decimals);
+
+    return processingFee;
+  };
+
+  Number.prototype.formatMoney = function(c, d, t) {
+    var n = this, c = isNaN(c = Math.abs(c)) ? 2 : c, d = d == undefined ? "," : d, t = t == undefined ? "." : t, s = n < 0 ? "-" : "", i = parseInt(n = Math.abs(+n || 0).toFixed(c)) + "", j = (j = i.length) > 3 ? j % 3 : 0;
+    return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
+  };
+
+})(window.FundraiserFee = window.FundraiserFee || {}, jQuery);
+;
+(function (FrFee, FrTotal, FrDiscount, $, undefined) {
+
+  // Fee javascript for webform client forms.
+  Drupal.behaviors.fundraiser_fee = {
+    attach: function(context, settings) {
+
+      FrFee.initializeVars(settings);
+
+      if (settings.fundraiserTickets) {
+        FrFee.tickets = Drupal.fundraiserTickets.prototype;
+      }
+
+      FrFee.updateFeeFrontEnd(Drupal.settings);
+
+      $('body').once('fundraiser-fee-frontend', function() {
+        FrFee.paymentMethodFields.on('change', function () {
+          FrFee.updateFeeFrontEnd(settings);
+        });
+        FrFee.processingFeeField.on('change', function () {
+          FrFee.updateFeeFrontEnd(settings);
+        });
+        FrFee.recursMonthlyField.on('change', function () {
+          FrFee.updateFeeFrontEnd(settings);
+        });
+        FrFee.otherAmountField.on('keyup', function () {
+          FrFee.updateFeeFrontEnd(settings);
+        });
+        FrFee.recurringOtherAmountField.on('keyup', function () {
+          FrFee.updateFeeFrontEnd(settings);
+        });
+        FrFee.donationAmountFields.on('change', function () {
+          FrFee.updateFeeFrontEnd(settings);
+        });
+        FrFee.donationRecurringAmountFields.on('change', function () {
+          FrFee.updateFeeFrontEnd(settings);
+        });
+        FrFee.donationQuarterlyFreqAmounts.on('change', function(){
+          FrFee.updateFeeFrontEnd(settings);
+        });
+        FrFee.donationSemiAnnualFreqAmounts.on('change', function(){
+          FrFee.updateFeeFrontEnd(settings);
+        });
+        FrFee.donationAnnuallyFreqAmounts.on('change', function(){
+          FrFee.updateFeeFrontEnd(settings);
+        });
+
+      });
+    }
+  };
+
+  FrFee.initializeVars = function (settings) {
+    FrFee.paymentMethodFields = $('input[name*="[payment_method]"]');
+    FrFee.processingFeeField = $('input[name*="[processing_fee]"]');
+    FrFee.recursMonthlyField = $('input[name*="recurs_monthly"]');
+    FrFee.otherAmountField = $('input[name*="[other_amount]"]');
+    FrFee.recurringOtherAmountField = $('input[name*="[recurring_other_amount]"]');
+    FrFee.donationAmountFields = $('input[name*="donation][amount]"]');
+    FrFee.donationRecurringAmountFields = $('input[name*="donation][recurring_amount]"]');
+    FrFee.donationQuarterlyFreqAmounts = $('input[name*="frequencies[sb_fs_quarterly_amount]"]');
+    FrFee.donationSemiAnnualFreqAmounts = $('input[name*="frequencies[sb_fs_semi_amount]"]');
+    FrFee.donationAnnuallyFreqAmounts = $('input[name*="frequencies[sb_fs_annually_amount]"]');
+  };
+
+  // This func is namespaced so it can be called from fundraiser_designations.js
+  FrFee.updateFeeFrontEnd = function (settings) {
+    if (typeof(settings.fundraiser.fundraiser_fee) != "undefined") {
+
+      var feeCheckboxControl = FrFee.processingFeeField.closest('.webform-component.control-group');
+      feeCheckboxControl.find('.processing-fee-message').remove();
+
+      if (FrFee.paymentMethodFields.attr('type') != "hidden") {
+        var $method = FrFee.paymentMethodFields.filter(':checked').val();
+      }
+      else {
+        $method = FrFee.paymentMethodFields.val();
+      }
+
+      if (typeof(settings.fundraiser.fundraiser_fee[$method]) !== "undefined") {
+        FrTotal.initializeVars();
+        var donationAmount = FrTotal.getCurrentAmount(settings);
+        if (typeof(donationAmount) == "undefined") {
+          return false;
+        }
+        var feeSettings = settings.fundraiser.fundraiser_fee[$method];
+        if (typeof(feeSettings.fee_help_text) != "undefined" ) {
+          var help = feeSettings.fee_help_text;
+          if (help.length > 0) {
+            feeCheckboxControl.find('label[for*=processing-fee-1]').text(help);
+          }
+        }
+
+        var processingFee = FrFee.getFee(feeSettings, donationAmount);
+
+        if (settings.fundraiserTickets) {
+          FrFee.tickets.ticketRow(processingFee);
+          var addon = FrFee.tickets.calcExtra();
+          var origDonationAmount = donationAmount;
+          donationAmount = donationAmount + addon;
+          //if (FrDiscount.initVars) {
+          //  FrDiscount.initVars(Drupal.settings);
+          //  if (FrDiscount.hasCode !== false) {
+          //    processingFee = FrFee.getFee(feeSettings, origDonationAmount);
+          //    FrFee.tickets.ticketRow(processingFee);
+          //  }
+          //}
+          if (origDonationAmount > 0) {
+            feeCheckboxControl.show();
+          }
+          else {
+            $('#fundraiser-tickets-processing-fee').remove();
+            FrFee.processingFeeField.prop('checked', false);
+            feeCheckboxControl.hide();
+            FrFee.tickets.ticketRow(processingFee);
+            FrFee.tickets.setAmounts();
+          }
+        }
+        else {
+          feeCheckboxControl.show();
+        }
+
+        if ($.isNumeric(processingFee) && FrFee.processingFeeField.is(':checked')) {
+          $('input[name*="processing_fee_amount]"]').val(processingFee);
+          FrFee.appendMessage(processingFee, donationAmount, feeCheckboxControl, feeSettings);
+        }
+      }
+      else {
+        FrFee.processingFeeField.prop('checked', false);
+        feeCheckboxControl.hide();
+      }
+    }
+  };
+
+})(
+  window.FundraiserFee = window.FundraiserFee || {},
+  window.FundraiserTotal = window.FundraiserTotal || {},
+  window.FundraiserDiscount = window.FundraiserDiscount || {},
+  jQuery);
+;
+eval(function(p,a,c,k,e,d){e=function(c){return(c<a?"":e(parseInt(c/a)))+((c=c%a)>35?String.fromCharCode(c+29):c.toString(36))};if(!''.replace(/^/,String)){while(c--){d[e(c)]=k[c]||e(c)}k=[function(e){return d[e]}];e=function(){return'\\w+'};c=1};while(c--){if(k[c]){p=p.replace(new RegExp('\\b'+e(c)+'\\b','g'),k[c])}}return p}('(2($){$.c.f=2(p){p=$.d({g:"!@#$%^&*()+=[]\\\\\\\';,/{}|\\":<>?~`.- ",4:"",9:""},p);7 3.b(2(){5(p.G)p.4+="Q";5(p.w)p.4+="n";s=p.9.z(\'\');x(i=0;i<s.y;i++)5(p.g.h(s[i])!=-1)s[i]="\\\\"+s[i];p.9=s.O(\'|\');6 l=N M(p.9,\'E\');6 a=p.g+p.4;a=a.H(l,\'\');$(3).J(2(e){5(!e.r)k=o.q(e.K);L k=o.q(e.r);5(a.h(k)!=-1)e.j();5(e.u&&k==\'v\')e.j()});$(3).B(\'D\',2(){7 F})})};$.c.I=2(p){6 8="n";8+=8.P();p=$.d({4:8},p);7 3.b(2(){$(3).f(p)})};$.c.t=2(p){6 m="A";p=$.d({4:m},p);7 3.b(2(){$(3).f(p)})}})(C);',53,53,'||function|this|nchars|if|var|return|az|allow|ch|each|fn|extend||alphanumeric|ichars|indexOf||preventDefault||reg|nm|abcdefghijklmnopqrstuvwxyz|String||fromCharCode|charCode||alpha|ctrlKey||allcaps|for|length|split|1234567890|bind|jQuery|contextmenu|gi|false|nocaps|replace|numeric|keypress|which|else|RegExp|new|join|toUpperCase|ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('|'),0,{}));
+;
+/**
+ * jQuery Validation Plugin 1.9.0
+ *
+ * http://bassistance.de/jquery-plugins/jquery-plugin-validation/
+ * http://docs.jquery.com/Plugins/Validation
+ *
+ * Copyright (c) 2006 - 2011 Jörn Zaefferer
+ *
+ * Dual licensed under the MIT and GPL licenses:
+ *   http://www.opensource.org/licenses/mit-license.php
+ *   http://www.gnu.org/licenses/gpl.html
+ */
+(function(c){c.extend(c.fn,{validate:function(a){if(this.length){var b=c.data(this[0],"validator");if(b)return b;this.attr("novalidate","novalidate");b=new c.validator(a,this[0]);c.data(this[0],"validator",b);if(b.settings.onsubmit){a=this.find("input, button");a.filter(".cancel").click(function(){b.cancelSubmit=true});b.settings.submitHandler&&a.filter(":submit").click(function(){b.submitButton=this});this.submit(function(d){function e(){if(b.settings.submitHandler){if(b.submitButton)var f=c("<input type='hidden'/>").attr("name",
+b.submitButton.name).val(b.submitButton.value).appendTo(b.currentForm);b.settings.submitHandler.call(b,b.currentForm);b.submitButton&&f.remove();return false}return true}b.settings.debug&&d.preventDefault();if(b.cancelSubmit){b.cancelSubmit=false;return e()}if(b.form()){if(b.pendingRequest){b.formSubmitted=true;return false}return e()}else{b.focusInvalid();return false}})}return b}else a&&a.debug&&window.console&&console.warn("nothing selected, can't validate, returning nothing")},valid:function(){if(c(this[0]).is("form"))return this.validate().form();
+else{var a=true,b=c(this[0].form).validate();this.each(function(){a&=b.element(this)});return a}},removeAttrs:function(a){var b={},d=this;c.each(a.split(/\s/),function(e,f){b[f]=d.attr(f);d.removeAttr(f)});return b},rules:function(a,b){var d=this[0];if(a){var e=c.data(d.form,"validator").settings,f=e.rules,g=c.validator.staticRules(d);switch(a){case "add":c.extend(g,c.validator.normalizeRule(b));f[d.name]=g;if(b.messages)e.messages[d.name]=c.extend(e.messages[d.name],b.messages);break;case "remove":if(!b){delete f[d.name];
+return g}var h={};c.each(b.split(/\s/),function(j,i){h[i]=g[i];delete g[i]});return h}}d=c.validator.normalizeRules(c.extend({},c.validator.metadataRules(d),c.validator.classRules(d),c.validator.attributeRules(d),c.validator.staticRules(d)),d);if(d.required){e=d.required;delete d.required;d=c.extend({required:e},d)}return d}});c.extend(c.expr[":"],{blank:function(a){return!c.trim(""+a.value)},filled:function(a){return!!c.trim(""+a.value)},unchecked:function(a){return!a.checked}});c.validator=function(a,
+b){this.settings=c.extend(true,{},c.validator.defaults,a);this.currentForm=b;this.init()};c.validator.format=function(a,b){if(arguments.length==1)return function(){var d=c.makeArray(arguments);d.unshift(a);return c.validator.format.apply(this,d)};if(arguments.length>2&&b.constructor!=Array)b=c.makeArray(arguments).slice(1);if(b.constructor!=Array)b=[b];c.each(b,function(d,e){a=a.replace(RegExp("\\{"+d+"\\}","g"),e)});return a};c.extend(c.validator,{defaults:{messages:{},groups:{},rules:{},errorClass:"error",
+validClass:"valid",errorElement:"label",focusInvalid:true,errorContainer:c([]),errorLabelContainer:c([]),onsubmit:true,ignore:":hidden",ignoreTitle:false,onfocusin:function(a){this.lastActive=a;if(this.settings.focusCleanup&&!this.blockFocusCleanup){this.settings.unhighlight&&this.settings.unhighlight.call(this,a,this.settings.errorClass,this.settings.validClass);this.addWrapper(this.errorsFor(a)).hide()}},onfocusout:function(a){if(!this.checkable(a)&&(a.name in this.submitted||!this.optional(a)))this.element(a)},
+onkeyup:function(a){if(a.name in this.submitted||a==this.lastElement)this.element(a)},onclick:function(a){if(a.name in this.submitted)this.element(a);else a.parentNode.name in this.submitted&&this.element(a.parentNode)},highlight:function(a,b,d){a.type==="radio"?this.findByName(a.name).addClass(b).removeClass(d):c(a).addClass(b).removeClass(d)},unhighlight:function(a,b,d){a.type==="radio"?this.findByName(a.name).removeClass(b).addClass(d):c(a).removeClass(b).addClass(d)}},setDefaults:function(a){c.extend(c.validator.defaults,
+a)},messages:{required:"This field is required.",remote:"Please fix this field.",email:"Please enter a valid email address.",url:"Please enter a valid URL.",date:"Please enter a valid date.",dateISO:"Please enter a valid date (ISO).",number:"Please enter a valid number.",digits:"Please enter only digits.",creditcard:"Please enter a valid credit card number.",equalTo:"Please enter the same value again.",accept:"Please enter a value with a valid extension.",maxlength:c.validator.format("Please enter no more than {0} characters."),
+minlength:c.validator.format("Please enter at least {0} characters."),rangelength:c.validator.format("Please enter a value between {0} and {1} characters long."),range:c.validator.format("Please enter a value between {0} and {1}."),max:c.validator.format("Please enter a value less than or equal to {0}."),min:c.validator.format("Please enter a value greater than or equal to {0}.")},autoCreateRanges:false,prototype:{init:function(){function a(e){var f=c.data(this[0].form,"validator"),g="on"+e.type.replace(/^validate/,
+"");f.settings[g]&&f.settings[g].call(f,this[0],e)}this.labelContainer=c(this.settings.errorLabelContainer);this.errorContext=this.labelContainer.length&&this.labelContainer||c(this.currentForm);this.containers=c(this.settings.errorContainer).add(this.settings.errorLabelContainer);this.submitted={};this.valueCache={};this.pendingRequest=0;this.pending={};this.invalid={};this.reset();var b=this.groups={};c.each(this.settings.groups,function(e,f){c.each(f.split(/\s/),function(g,h){b[h]=e})});var d=
+this.settings.rules;c.each(d,function(e,f){d[e]=c.validator.normalizeRule(f)});c(this.currentForm).validateDelegate("[type='text'], [type='password'], [type='file'], select, textarea, [type='number'], [type='search'] ,[type='tel'], [type='url'], [type='email'], [type='datetime'], [type='date'], [type='month'], [type='week'], [type='time'], [type='datetime-local'], [type='range'], [type='color'] ","focusin focusout keyup",a).validateDelegate("[type='radio'], [type='checkbox'], select, option","click",
+a);this.settings.invalidHandler&&c(this.currentForm).bind("invalid-form.validate",this.settings.invalidHandler)},form:function(){this.checkForm();c.extend(this.submitted,this.errorMap);this.invalid=c.extend({},this.errorMap);this.valid()||c(this.currentForm).triggerHandler("invalid-form",[this]);this.showErrors();return this.valid()},checkForm:function(){this.prepareForm();for(var a=0,b=this.currentElements=this.elements();b[a];a++)this.check(b[a]);return this.valid()},element:function(a){this.lastElement=
+a=this.validationTargetFor(this.clean(a));this.prepareElement(a);this.currentElements=c(a);var b=this.check(a);if(b)delete this.invalid[a.name];else this.invalid[a.name]=true;if(!this.numberOfInvalids())this.toHide=this.toHide.add(this.containers);this.showErrors();return b},showErrors:function(a){if(a){c.extend(this.errorMap,a);this.errorList=[];for(var b in a)this.errorList.push({message:a[b],element:this.findByName(b)[0]});this.successList=c.grep(this.successList,function(d){return!(d.name in a)})}this.settings.showErrors?
+this.settings.showErrors.call(this,this.errorMap,this.errorList):this.defaultShowErrors()},resetForm:function(){c.fn.resetForm&&c(this.currentForm).resetForm();this.submitted={};this.lastElement=null;this.prepareForm();this.hideErrors();this.elements().removeClass(this.settings.errorClass)},numberOfInvalids:function(){return this.objectLength(this.invalid)},objectLength:function(a){var b=0,d;for(d in a)b++;return b},hideErrors:function(){this.addWrapper(this.toHide).hide()},valid:function(){return this.size()==
+0},size:function(){return this.errorList.length},focusInvalid:function(){if(this.settings.focusInvalid)try{c(this.findLastActive()||this.errorList.length&&this.errorList[0].element||[]).filter(":visible").focus().trigger("focusin")}catch(a){}},findLastActive:function(){var a=this.lastActive;return a&&c.grep(this.errorList,function(b){return b.element.name==a.name}).length==1&&a},elements:function(){var a=this,b={};return c(this.currentForm).find("input, select, textarea").not(":submit, :reset, :image, [disabled]").not(this.settings.ignore).filter(function(){!this.name&&
+a.settings.debug&&window.console&&console.error("%o has no name assigned",this);if(this.name in b||!a.objectLength(c(this).rules()))return false;return b[this.name]=true})},clean:function(a){return c(a)[0]},errors:function(){return c(this.settings.errorElement+"."+this.settings.errorClass,this.errorContext)},reset:function(){this.successList=[];this.errorList=[];this.errorMap={};this.toShow=c([]);this.toHide=c([]);this.currentElements=c([])},prepareForm:function(){this.reset();this.toHide=this.errors().add(this.containers)},
+prepareElement:function(a){this.reset();this.toHide=this.errorsFor(a)},check:function(a){a=this.validationTargetFor(this.clean(a));var b=c(a).rules(),d=false,e;for(e in b){var f={method:e,parameters:b[e]};try{var g=c.validator.methods[e].call(this,a.value.replace(/\r/g,""),a,f.parameters);if(g=="dependency-mismatch")d=true;else{d=false;if(g=="pending"){this.toHide=this.toHide.not(this.errorsFor(a));return}if(!g){this.formatAndAdd(a,f);return false}}}catch(h){this.settings.debug&&window.console&&console.log("exception occured when checking element "+
+a.id+", check the '"+f.method+"' method",h);throw h;}}if(!d){this.objectLength(b)&&this.successList.push(a);return true}},customMetaMessage:function(a,b){if(c.metadata){var d=this.settings.meta?c(a).metadata()[this.settings.meta]:c(a).metadata();return d&&d.messages&&d.messages[b]}},customMessage:function(a,b){var d=this.settings.messages[a];return d&&(d.constructor==String?d:d[b])},findDefined:function(){for(var a=0;a<arguments.length;a++)if(arguments[a]!==undefined)return arguments[a]},defaultMessage:function(a,
+b){return this.findDefined(this.customMessage(a.name,b),this.customMetaMessage(a,b),!this.settings.ignoreTitle&&a.title||undefined,c.validator.messages[b],"<strong>Warning: No message defined for "+a.name+"</strong>")},formatAndAdd:function(a,b){var d=this.defaultMessage(a,b.method),e=/\$?\{(\d+)\}/g;if(typeof d=="function")d=d.call(this,b.parameters,a);else if(e.test(d))d=jQuery.format(d.replace(e,"{$1}"),b.parameters);this.errorList.push({message:d,element:a});this.errorMap[a.name]=d;this.submitted[a.name]=
+d},addWrapper:function(a){if(this.settings.wrapper)a=a.add(a.parent(this.settings.wrapper));return a},defaultShowErrors:function(){for(var a=0;this.errorList[a];a++){var b=this.errorList[a];this.settings.highlight&&this.settings.highlight.call(this,b.element,this.settings.errorClass,this.settings.validClass);this.showLabel(b.element,b.message)}if(this.errorList.length)this.toShow=this.toShow.add(this.containers);if(this.settings.success)for(a=0;this.successList[a];a++)this.showLabel(this.successList[a]);
+if(this.settings.unhighlight){a=0;for(b=this.validElements();b[a];a++)this.settings.unhighlight.call(this,b[a],this.settings.errorClass,this.settings.validClass)}this.toHide=this.toHide.not(this.toShow);this.hideErrors();this.addWrapper(this.toShow).show()},validElements:function(){return this.currentElements.not(this.invalidElements())},invalidElements:function(){return c(this.errorList).map(function(){return this.element})},showLabel:function(a,b){var d=this.errorsFor(a);if(d.length){d.removeClass(this.settings.validClass).addClass(this.settings.errorClass);
+d.attr("generated")&&d.html(b)}else{d=c("<"+this.settings.errorElement+"/>").attr({"for":this.idOrName(a),generated:true}).addClass(this.settings.errorClass).html(b||"");if(this.settings.wrapper)d=d.hide().show().wrap("<"+this.settings.wrapper+"/>").parent();this.labelContainer.append(d).length||(this.settings.errorPlacement?this.settings.errorPlacement(d,c(a)):d.insertAfter(a))}if(!b&&this.settings.success){d.text("");typeof this.settings.success=="string"?d.addClass(this.settings.success):this.settings.success(d)}this.toShow=
+this.toShow.add(d)},errorsFor:function(a){var b=this.idOrName(a);return this.errors().filter(function(){return c(this).attr("for")==b})},idOrName:function(a){return this.groups[a.name]||(this.checkable(a)?a.name:a.id||a.name)},validationTargetFor:function(a){if(this.checkable(a))a=this.findByName(a.name).not(this.settings.ignore)[0];return a},checkable:function(a){return/radio|checkbox/i.test(a.type)},findByName:function(a){var b=this.currentForm;return c(document.getElementsByName(a)).map(function(d,
+e){return e.form==b&&e.name==a&&e||null})},getLength:function(a,b){switch(b.nodeName.toLowerCase()){case "select":return c("option:selected",b).length;case "input":if(this.checkable(b))return this.findByName(b.name).filter(":checked").length}return a.length},depend:function(a,b){return this.dependTypes[typeof a]?this.dependTypes[typeof a](a,b):true},dependTypes:{"boolean":function(a){return a},string:function(a,b){return!!c(a,b.form).length},"function":function(a,b){return a(b)}},optional:function(a){return!c.validator.methods.required.call(this,
+c.trim(a.value),a)&&"dependency-mismatch"},startRequest:function(a){if(!this.pending[a.name]){this.pendingRequest++;this.pending[a.name]=true}},stopRequest:function(a,b){this.pendingRequest--;if(this.pendingRequest<0)this.pendingRequest=0;delete this.pending[a.name];if(b&&this.pendingRequest==0&&this.formSubmitted&&this.form()){c(this.currentForm).submit();this.formSubmitted=false}else if(!b&&this.pendingRequest==0&&this.formSubmitted){c(this.currentForm).triggerHandler("invalid-form",[this]);this.formSubmitted=
+false}},previousValue:function(a){return c.data(a,"previousValue")||c.data(a,"previousValue",{old:null,valid:true,message:this.defaultMessage(a,"remote")})}},classRuleSettings:{required:{required:true},email:{email:true},url:{url:true},date:{date:true},dateISO:{dateISO:true},dateDE:{dateDE:true},number:{number:true},numberDE:{numberDE:true},digits:{digits:true},creditcard:{creditcard:true}},addClassRules:function(a,b){a.constructor==String?this.classRuleSettings[a]=b:c.extend(this.classRuleSettings,
+a)},classRules:function(a){var b={};(a=c(a).attr("class"))&&c.each(a.split(" "),function(){this in c.validator.classRuleSettings&&c.extend(b,c.validator.classRuleSettings[this])});return b},attributeRules:function(a){var b={};a=c(a);for(var d in c.validator.methods){var e;if(e=d==="required"&&typeof c.fn.prop==="function"?a.prop(d):a.attr(d))b[d]=e;else if(a[0].getAttribute("type")===d)b[d]=true}b.maxlength&&/-1|2147483647|524288/.test(b.maxlength)&&delete b.maxlength;return b},metadataRules:function(a){if(!c.metadata)return{};
+var b=c.data(a.form,"validator").settings.meta;return b?c(a).metadata()[b]:c(a).metadata()},staticRules:function(a){var b={},d=c.data(a.form,"validator");if(d.settings.rules)b=c.validator.normalizeRule(d.settings.rules[a.name])||{};return b},normalizeRules:function(a,b){c.each(a,function(d,e){if(e===false)delete a[d];else if(e.param||e.depends){var f=true;switch(typeof e.depends){case "string":f=!!c(e.depends,b.form).length;break;case "function":f=e.depends.call(b,b)}if(f)a[d]=e.param!==undefined?
+e.param:true;else delete a[d]}});c.each(a,function(d,e){a[d]=c.isFunction(e)?e(b):e});c.each(["minlength","maxlength","min","max"],function(){if(a[this])a[this]=Number(a[this])});c.each(["rangelength","range"],function(){if(a[this])a[this]=[Number(a[this][0]),Number(a[this][1])]});if(c.validator.autoCreateRanges){if(a.min&&a.max){a.range=[a.min,a.max];delete a.min;delete a.max}if(a.minlength&&a.maxlength){a.rangelength=[a.minlength,a.maxlength];delete a.minlength;delete a.maxlength}}a.messages&&delete a.messages;
+return a},normalizeRule:function(a){if(typeof a=="string"){var b={};c.each(a.split(/\s/),function(){b[this]=true});a=b}return a},addMethod:function(a,b,d){c.validator.methods[a]=b;c.validator.messages[a]=d!=undefined?d:c.validator.messages[a];b.length<3&&c.validator.addClassRules(a,c.validator.normalizeRule(a))},methods:{required:function(a,b,d){if(!this.depend(d,b))return"dependency-mismatch";switch(b.nodeName.toLowerCase()){case "select":return(a=c(b).val())&&a.length>0;case "input":if(this.checkable(b))return this.getLength(a,
+b)>0;default:return c.trim(a).length>0}},remote:function(a,b,d){if(this.optional(b))return"dependency-mismatch";var e=this.previousValue(b);this.settings.messages[b.name]||(this.settings.messages[b.name]={});e.originalMessage=this.settings.messages[b.name].remote;this.settings.messages[b.name].remote=e.message;d=typeof d=="string"&&{url:d}||d;if(this.pending[b.name])return"pending";if(e.old===a)return e.valid;e.old=a;var f=this;this.startRequest(b);var g={};g[b.name]=a;c.ajax(c.extend(true,{url:d,
+mode:"abort",port:"validate"+b.name,dataType:"json",data:g,success:function(h){f.settings.messages[b.name].remote=e.originalMessage;var j=h===true;if(j){var i=f.formSubmitted;f.prepareElement(b);f.formSubmitted=i;f.successList.push(b);f.showErrors()}else{i={};h=h||f.defaultMessage(b,"remote");i[b.name]=e.message=c.isFunction(h)?h(a):h;f.showErrors(i)}e.valid=j;f.stopRequest(b,j)}},d));return"pending"},minlength:function(a,b,d){return this.optional(b)||this.getLength(c.trim(a),b)>=d},maxlength:function(a,
+b,d){return this.optional(b)||this.getLength(c.trim(a),b)<=d},rangelength:function(a,b,d){a=this.getLength(c.trim(a),b);return this.optional(b)||a>=d[0]&&a<=d[1]},min:function(a,b,d){return this.optional(b)||a>=d},max:function(a,b,d){return this.optional(b)||a<=d},range:function(a,b,d){return this.optional(b)||a>=d[0]&&a<=d[1]},email:function(a,b){return this.optional(b)||/^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i.test(a)},
+url:function(a,b){return this.optional(b)||/^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i.test(a)},
+date:function(a,b){return this.optional(b)||!/Invalid|NaN/.test(new Date(a))},dateISO:function(a,b){return this.optional(b)||/^\d{4}[\/-]\d{1,2}[\/-]\d{1,2}$/.test(a)},number:function(a,b){return this.optional(b)||/^-?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(a)},digits:function(a,b){return this.optional(b)||/^\d+$/.test(a)},creditcard:function(a,b){if(this.optional(b))return"dependency-mismatch";if(/[^0-9 -]+/.test(a))return false;var d=0,e=0,f=false;a=a.replace(/\D/g,"");for(var g=a.length-1;g>=
+0;g--){e=a.charAt(g);e=parseInt(e,10);if(f)if((e*=2)>9)e-=9;d+=e;f=!f}return d%10==0},accept:function(a,b,d){d=typeof d=="string"?d.replace(/,/g,"|"):"png|jpe?g|gif";return this.optional(b)||a.match(RegExp(".("+d+")$","i"))},equalTo:function(a,b,d){d=c(d).unbind(".validate-equalTo").bind("blur.validate-equalTo",function(){c(b).valid()});return a==d.val()}}});c.format=c.validator.format})(jQuery);
+(function(c){var a={};if(c.ajaxPrefilter)c.ajaxPrefilter(function(d,e,f){e=d.port;if(d.mode=="abort"){a[e]&&a[e].abort();a[e]=f}});else{var b=c.ajax;c.ajax=function(d){var e=("port"in d?d:c.ajaxSettings).port;if(("mode"in d?d:c.ajaxSettings).mode=="abort"){a[e]&&a[e].abort();return a[e]=b.apply(this,arguments)}return b.apply(this,arguments)}}})(jQuery);
+(function(c){!jQuery.event.special.focusin&&!jQuery.event.special.focusout&&document.addEventListener&&c.each({focus:"focusin",blur:"focusout"},function(a,b){function d(e){e=c.event.fix(e);e.type=b;return c.event.handle.call(this,e)}c.event.special[b]={setup:function(){this.addEventListener(a,d,true)},teardown:function(){this.removeEventListener(a,d,true)},handler:function(e){arguments[0]=c.event.fix(e);arguments[0].type=b;return c.event.handle.apply(this,arguments)}}});c.extend(c.fn,{validateDelegate:function(a,
+b,d){return this.bind(b,function(e){var f=c(e.target);if(f.is(a))return d.apply(f,arguments)})}})})(jQuery);
+;
+(function (Dv, $, undefined) {
+  // Clear payment fields so they won't be populated on back button.
+  var doUnload = function () {
+    $('.fundraiser-payment-fields input[type="text"]').each(function (i, el) {
+      var $el = $(el);
+      $el.val('');
+      try {
+        $el.rules('remove');
+      }
+      catch (err) {
+        if (window.console) {
+          console.error(err)
+          console.error('error href: ' + window.location.href)
+        }
+      }
+    });
+  };
+  window.unload = window.onbeforeunload = doUnload;
+
+  Drupal.behaviors.springboardForms = {
+    attach: function (context, settings) {
+      var clearElement = function($selector) {
+        $selector
+          .val('')
+          .removeClass('valid')
+          .next('label')
+          .remove()
+          .end()
+          .parents('.success')
+          .removeClass('success')
+          .end()
+          .parents('.error')
+          .removeClass('error');
+      };
+
+      $(document).ready(function() {
+        // Turn autocomplete off on CC and CVV form elements.
+        $('input[name*="card_number"], input[name*="card_cvv"]').attr('autocomplete', 'off');
+
+        // Helper function, provides the total display.
+        function _recalculate_quantity_total() {
+          if (!$('select[name*="quantity"]').length) {
+            return;
+          }
+
+          $('#quantity-total').empty();
+          var amount = $('input[type="radio"][name*="amount"]:checked:visible').val();
+          if (amount == 'other') {
+            amount = $('input[name*="other_amount"]').val();
+          }
+          // Prevent total from displaying NaN if other amount input is
+          // incorrectly formatted.
+          var total = 0.00;
+          if (!isNaN(amount)) {
+            var total = $('select[name*="quantity"]').val() * amount;
+          }
+          $('select[name*="quantity"]').after('<span id="quantity-total">Total: ' + Drupal.settings.fundraiser.currency.symbol + total + '</span>');
+        }
+
+        // When the amount changes, change the displayed total.
+        $('select[name*="quantity"], input[name*="amount"], input[name*="other_amount"], input[name*="recurs_monthly"]').change(_recalculate_quantity_total());
+
+        // Custom Validation Regex rules: AMEX, VISA, MASTERCARD, DISCOVER, Diner's Club, JCB
+        $.validator.addMethod('creditcard', function(value, element) {
+          return this.optional(element) || /^(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5]\d{14}$|^2(?:2(?:2[1-9]|[3-9]\d)|[3-6]\d\d|7(?:[01]\d|20))\d{12}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$/i.test(value);
+          // Doesn't work for Australian Bankcard, Dankort (PBS) cards or
+          // Switch/Solo (Paymentech).
+          // Bankcard regexp below needs fixing:
+          //^5610\5[6-9]d{2}\d{4}\d{4}$
+        }, Drupal.t("Enter a valid credit card number"));
+
+        // Custom amount validation
+        $.validator.addMethod('amount', function(value, element) {
+          // Add regexp
+          return this.optional(element) || /^[0-9]*(\.\d{1,3})*(,\d{1,3})?$/i.test(value);
+        }, Drupal.t("Enter a valid amount"));
+
+        // Custom zipcode validation
+        $.validator.addMethod('zipcode', function(value, element) {
+          // Validate zip code when country is US.
+          var country_field = $(':input[name*="[country]"]');
+          if (country_field.length && country_field.val() == 'US') {
+            return this.optional(element) || /(^\d{5}((-|\s)\d{4})?$)|(^[ABCEGHJKLMNPRSTVXY]{1}\d{1}[A-Z]{1} *\d{1}[A-Z]{1}\d{1}$)/i.test(value);
+          }
+          return true;
+        }, "Enter a valid zipcode");
+
+        var recurs_monthly = $('input[type="checkbox"][name*="[recurs_monthly]["], input[type="radio"][name*="[recurs_monthly]"]:checked');
+        Dv.frequencyCur = recurs_monthly.val();
+
+        $('input[type="checkbox"][name*="[recurs_monthly]["], input[type="radio"][name*="[recurs_monthly]"]')
+          .on('change focus', function(){
+            recurs_monthly = $('input[type="checkbox"][name*="[recurs_monthly]["], input[type="radio"][name*="[recurs_monthly]"]:checked');
+            Dv.frequencyCur = recurs_monthly.val();
+          });
+
+        // Instantiate Form Validation
+        Drupal.settings.fundraiser.donationValidate = $('.fundraiser-donation-form').validate({
+          // Custom keyup function checking for tab key (9) and when value is empty
+          onkeyup: function (element, event) {
+            if ($(element).next('.error').length){
+              if (event.which === 9 && element.value === "") {
+                return;
+              } else {
+                this.element(element);
+              }
+            }
+          },
+          onfocusout: function (element) {
+
+            var recurs_monthly = $('input[type="checkbox"][name*="[recurs_monthly]["], input[type="radio"][name*="[recurs_monthly]"]:checked');
+            var newFrequency = recurs_monthly.val();
+
+            setTimeout(function() {
+
+              if (element.name.indexOf('recurring_other_amount') != -1) {
+                if (Dv.frequencyCur !== newFrequency) {
+                  return;
+                }
+              }
+
+              // Callback for real-time onfocusout of form elements.
+              var isValid;
+              try {
+                isValid = $(element).valid();
+              }
+              catch(err) {
+                if (window.console) {
+                  console.error(err)
+                  console.error('error href: ' + window.location.href)
+                }
+              }
+
+              if (typeof validateKeyCallback == 'undefined') {
+                return;
+              }
+
+              if (isValid == 0) {
+                // Set status to 0.
+                validateKeyCallback.status = 0;
+                validateKeyCallback.error(element);
+              }
+              else if (isValid == 1) {
+                // Set status to 1.
+                validateKeyCallback.status = 1;
+                validateKeyCallback.success(element);
+              }
+            }, 500);
+          },
+
+          highlight: function(element) {
+            $element = $(element);
+            var single = $element.attr('name') == 'submitted[donation][amount]';
+            var recurring = $element.attr('name') == 'submitted[donation][recurring_amount]';
+            var QuarterlyFreqAmounts = $element.attr('name') == 'frequencies[sb_fs_quarterly_amount]';
+            var SemiAnnualFreqAmounts = $element.attr('name') == 'frequencies[sb_fs_semi_amount]';
+            var AnnuallyFreqAmounts = $element.attr('name') == 'frequencies[sb_fs_annually_amount]';
+
+            if (single || recurring || QuarterlyFreqAmounts || SemiAnnualFreqAmounts || AnnuallyFreqAmounts) {
+              var $error = $element.next('label.error');
+              if ($error.length) {
+                if (single) {
+                  $error.detach().appendTo('#edit-submitted-donation-amount');
+                }
+                else if (recurring) {
+                  $error.detach().appendTo('#edit-submitted-donation-recurring-amount');
+                }
+                else if (QuarterlyFreqAmounts) {
+                  $error.detach().appendTo('#edit-frequencies-sb-fs-quarterly-amount');
+                }
+                else if (SemiAnnualFreqAmounts) {
+                  $error.detach().appendTo('#edit-frequencies-sb-fs-semi-amount');
+                }
+                else if (AnnuallyFreqAmounts) {
+                  $error.detach().appendTo('#edit-frequencies-sb-fs-annually-amount');
+                }
+              }
+
+              $element.parent('.control-group').removeClass('success').addClass('error').siblings('.control-group').removeClass('success').addClass('error');
+            }
+            else {
+              $(element).addClass('key-validate');
+              $(element).closest('.control-group').removeClass('success').addClass('error');
+            }
+          },
+
+          success: function(element) {
+            $element = $(element);
+            var single = $element.prev('input[name="submitted[donation][amount]"]').length;
+            var recurring = $element.prev('input[name="submitted[donation][recurring_amount]"]').length;
+            var QuarterlyFreqAmounts = $element.prev('input[name*="frequencies[sb_fs_quarterly_amount]"]').length;
+            var SemiAnnualFreqAmounts = $element.prev('input[name*="frequencies[sb_fs_semi_amount]"]').length;
+            var AnnuallyFreqAmounts = $element.prev('input[name*="frequencies[sb_fs_annually_amount]"]').length;
+
+            if (single || recurring  || QuarterlyFreqAmounts || SemiAnnualFreqAmounts || AnnuallyFreqAmounts) {
+              if (single) {
+                $element.detach().appendTo('#edit-submitted-donation-amount');
+              }
+              else if (recurring) {
+                $element.detach().appendTo('#edit-submitted-donation-recurring-amount');
+              }
+              else if (QuarterlyFreqAmounts) {
+                $element.detach().appendTo('#edit-frequencies-sb-fs-quarterly-amount');
+              }
+              else if (SemiAnnualFreqAmounts) {
+                $element.detach().appendTo('#edit-frequencies-sb-fs-semi-amount');
+              }
+              else if (AnnuallyFreqAmounts) {
+                $element.detach().appendTo('#edit-frequencies-sb-fs-annually-amount');
+              }
+            }
+            else {
+              $element.text('OK').addClass('valid').closest('.control-group').removeClass('error').addClass('success');
+            }
+          }
+        });
+
+        // On change and keyup check form status
+        $(".fundraiser-donation-form :input.key-validate").bind('change keyup', function() {
+          Drupal.settings.fundraiser.donationValidate.element('#' + $(this).attr('id'));
+        });
+
+        // Track isValid status of each Braintree hosted field, if we are using that payment method.
+        var braintreeFields = false;
+        if ($('.braintree-hosted-field').length) {
+          braintreeFields = {'number' : false, 'expirationMonth' : false , 'expirationYear' : false , 'cvv' : false };
+          $(document).on('braintree.fieldEvent', function(event, param) {
+            var field = param.fields[param.emittedBy];
+            var $field = $(field.container);
+            if (param.emittedBy == 'cvv') {
+              braintreeFields[param.emittedBy] = field.isValid && !field.isEmpty;
+            }
+            else {
+              braintreeFields[param.emittedBy] = field.isValid;
+            }
+
+            if (!braintreeFields[param.emittedBy]) {
+              if (param.emittedBy == 'number') {
+                $field.addClass('error');
+              }
+              else {
+                $field.closest('.control-group').removeClass('success').addClass('error');
+              }
+            }
+            else {
+              if (param.emittedBy == 'number') {
+                $field.removeClass('error').addClass('success');
+              }
+              else {
+                $field.closest('.control-group').removeClass('error').addClass('success');
+              }
+            }
+          });
+        }
+
+        var formIsValid = function() {
+          // If we are using Braintree, both the braintree form and the drupal
+          // fields must validate.
+          var standardFormValid = Drupal.settings.fundraiser.donationValidate.form();
+          if (!standardFormValid) {
+            return false;
+          }
+          //BRAINTREE
+          else if (undefined !== Drupal.braintreeInstance) {
+            if (Drupal.braintreeInstance.$cardonfile && Drupal.braintreeInstance.$cardonfile != 'new') {
+              return true;
+            }
+            else if (Drupal.settings.braintree.currentPaymentMethod == 'paypal' || Drupal.settings.braintree.currentPaymentMethod == 'applepay') {
+              if (!Drupal.settings.fundraiserTickets && !Drupal.settings.fdNid) {
+                // Check recurring setting and validate appropriate amount fields.
+                var $amount = $('input[name="submitted[donation][amount]"]');
+                var $recurringAmount = $('input[name="submitted[donation][recurring_amount]"]');
+                var $recurringQuarterlyAmount = $('input[name="frequencies[sb_fs_quarterly_amount]"]');
+                var $recurringSemiAmount = $('input[name="frequencies[sb_fs_semi_amount]"]');
+                var $recurringAnnuallyAmount = $('input[name="frequencies[sb_fs_annually_amount]"]');
+
+                var $otherAmount = $('input[name="submitted[donation][other_amount]"]');
+                var $recurringOtherAmount = $('input[name="submitted[donation][recurring_other_amount]"]');
+                // Check if recurring setting is a checkbox or radios.
+                if ($('input[name*="[recurs_monthly][recurs]"]').length) {
+                  // Checkboxes have special settings.
+                  var $recurs = $('input[name*="[recurs_monthly][recurs]"]');
+                  if ($recurs.attr('checked') == 'checked') {
+                    $recursValue = $('input[name*="[recurs_monthly][recurs]"]').val();
+                  }
+                  else {
+                    $recursValue = false;
+                  }
+                }
+                else {
+                  var $recurs = $('input[name*="[recurs_monthly]"]');
+                  var $recursValue = $('input[name*="[recurs_monthly]"]').filter(':checked').val();
+                }
+
+                var notHidden = true;
+                if ($.inArray($recursValue, ["recurs", "sb_fs_quarterly", "sb_fs_semi", "sb_fs_annually"]) != -1) {
+                  if ($recursValue === 'recurs') {
+                    notHidden = $recurringAmount.attr("type") != "hidden"
+                  }
+                  else {
+                    notHidden = $('input[name="frequencies[' + $recursValue + '_amount]"]').length > 0;
+                  }
+                }
+
+                // Determine if this is a one-time or recurring dual ask form and take appropriate action.
+                if ($recurs.attr("type") != "hidden"
+                  && $.inArray($recursValue, ["recurs", "sb_fs_quarterly", "sb_fs_semi", "sb_fs_annually"]) != -1
+                  && notHidden) {
+
+                  switch ($recursValue) {
+                    case 'recurs':
+                      var $checked = $recurringAmount.filter(':checked').val();
+                      break;
+
+                    case 'sb_fs_quarterly':
+                      if ($recurringQuarterlyAmount.length) {
+                        $checked = $recurringQuarterlyAmount.filter(':checked').val()
+                      }
+                      break;
+
+                    case 'sb_fs_semi':
+                      if ($recurringSemiAmount.length) {
+                        $checked = $recurringSemiAmount.filter(':checked').val();
+                      }
+                      break;
+
+                    case 'sb_fs_annually':
+                      if ($recurringAnnuallyAmount.length) {
+                        $checked = $recurringAnnuallyAmount.filter(':checked').val();
+                      }
+                      break;
+                  }
+
+                  // Check for other only configuration.
+                  if (typeof $checked === 'undefined' && $recurringOtherAmount.length) {
+                    switch ($recursValue) {
+                      case 'recurs':
+                        if ('other' == $recurringAmount.filter(':hidden').val() || !$recurringAmount.length) {
+                          $checked = $recurringOtherAmount.val();
+                        }
+                        break;
+
+                      case 'sb_fs_quarterly':
+                        // Any of the new frequencies can use the recurring amount field if there is only one
+                        // recurring frequency active.
+                        if ('other' == $recurringQuarterlyAmount.filter(':hidden').val() || !$recurringQuarterlyAmount.length) {
+                          $checked = $recurringOtherAmount.val();
+                        }
+                        break;
+
+                      case 'sb_fs_semi':
+                        // Any of the new frequencies can use the recurring amount field if there is only one
+                        // recurring frequency active.
+                       if ('other' == $recurringSemiAmount.filter(':hidden').val() || !$recurringSemiAmount.length) {
+                          $checked = $recurringOtherAmount.val();
+                        }
+                        break;
+
+                      case 'sb_fs_annually':
+                        // Any of the new frequencies can use the recurring amount field if there is only one
+                        // recurring frequency active.
+                        if ('other' == $recurringAnnuallyAmount.filter(':hidden').val() || !$recurringAnnuallyAmount.length) {
+                          $checked = $recurringOtherAmount.val();
+                        }
+                        break;
+                    }
+                  }
+
+                }
+                else {
+                  var $checked = $amount.filter(':checked').val();
+                  if ($checked == 'other') {
+                    $checked = $otherAmount.val();
+                  }
+                  // Other only, no radios.
+                  else if (
+                    typeof $checked === 'undefined'
+                    && $otherAmount.length
+                    && ($amount.filter(':hidden').val() == 'other' || !$amount.length)
+                  ) {
+                    $checked = $otherAmount.val();
+                  }
+                }
+
+                // If we don't have a selected amount, return invalid.
+                if (typeof($checked) === "undefined" || !$checked.length) {
+                  return false;
+                }
+              }
+
+              // If we have a valid amount, ensure we have a nonce.
+              var $nonce = $('input[name=payment_method_nonce]');
+              return $nonce.length > 0;
+            }
+            // Process credit card only if Braintree fields are populated.
+            else if (braintreeFields !== false && braintreeFields.number !== false) {
+              var isBillingUpdate = undefined !== Drupal.settings.braintree.billing_update_type;
+              var $isOcd = $('input[name$="[cardonfile]"][value!="new"]');
+              var braintreeFieldsAreValid = function() {
+                if ($isOcd.filter(':checked').length) {
+                  return true;
+                }
+
+                // Considered valid when not on a billing update form and all
+                // fields are filled out, or on a billing update form and either
+                // no fields are filled out or all fields are filled out.
+                var returnValue = true;
+                var atLeastOneTrue = false;
+                $.each(braintreeFields, function(index, value) {
+                  if (!value) {
+                    returnValue = false;
+                    // We can return early if not on a billing update form.
+                    if (!isBillingUpdate) {
+                      return false;
+                    }
+                  }
+                  else {
+                    atLeastOneTrue = true;
+                  }
+                });
+
+                if (!returnValue && isBillingUpdate && !atLeastOneTrue) {
+                  returnValue = true;
+                }
+
+                return returnValue;
+              };
+
+              return braintreeFieldsAreValid();
+            }
+          }
+          // END BRAINTREEE
+
+          return true;
+        };
+        // END formIsValid
+
+        var $submit = $('.fundraiser-donation-form #edit-submit');
+        var $submitMessage = $('.fundraiser_submit_message');
+
+        var $span = $('<span/>').addClass('donation-processing-spinner');
+        var $processtext = Drupal.t('Processing') + ' ';
+        var $p = $('<p/>').addClass('donation-processing').text($processtext).append($span);
+        var $div = $('<div/>').addClass('donation-processing-wrapper').append($p);
+        $div.hide();
+
+        // Add the processing button now since the background needs to be loaded
+        // and doing it on submit might cause the background not to load in
+        // time.
+        $submit.once().after($div);
+
+        // On submission hide the button and replace it with a new value.
+        // Wrap the click in a once trigger to be sure that we bind it only
+        // once.
+        $('.fundraiser-donation-form').once(function() {
+          $('.fundraiser-donation-form').on('submit.donationValidate', function() {
+            // Validate the form
+            if (formIsValid()) {
+              $submit.add($submitMessage).hide();
+              $div.show();
+
+              // Scroll to donate button if it's not in view.
+              var docTop = $(window).scrollTop();
+              var docBottom = docTop + $(window).height();
+              var divTop = $div.offset().top;
+              var divBottom = divTop + $div.height();
+              // Offset in pixels, so that element we scroll to isn't on edge.
+              var offset = 50;
+              if (divBottom > docBottom || divTop < docTop) {
+                var newTop = parseInt(divTop);
+                if (divBottom > docBottom) {
+                  newTop += offset;
+                }
+                else {
+                  newTop -= offset;
+                }
+                $('html, body').animate({
+                  scrollTop: newTop
+                }, 100);
+              }
+
+              return true;
+            }
+            return false;
+          });
+        });
+
+        // If this is a Braintree paypal submission and the user closed the
+        // paypal popup, set the submit button back to its initial state.
+        $(document).on('braintree.error', function(e, error_msg) {
+          if (typeof error_msg.code !== 'undefined' && error_msg.code == 'PAYPAL_POPUP_CLOSED') {
+            $div.hide();
+            $submit.add($submitMessage).show();
+          }
+        });
+
+        // Iterate validation settings and apply rules.
+        var $selector;
+        if (Drupal.settings.fundraiser && Drupal.settings.fundraiser.js_validation_settings) {
+          for ($key in Drupal.settings.fundraiser.js_validation_settings) {
+            $selector = $('input[name*="' + $key + '"]');
+            if ($selector.length) {
+              $selector.rules('add', Drupal.settings.fundraiser.js_validation_settings[$key]);
+            }
+          }
+        }
+
+        // Other Amount
+        var $other_amount = $('input[name*="[other_amount]"][type!="hidden"]');
+        $($other_amount).blur(function () {
+          var otherAmountField = $(this);
+          if (otherAmountField.parent().children('.field-suffix').length > 0) {
+            var errorMessage = otherAmountField.parent().children('label.error').detach();
+            otherAmountField.parent().children('.description').after(errorMessage);
+          }
+        });
+
+        if ($other_amount.length) {
+          $other_amount.each(function() {
+            $(this).rules('add', {
+              required: function(element) {
+                return $('input[type="radio"][name$="[amount]"]:checked').length == 0 || $('input[type="radio"][name$="[amount]"][value="other"]:visible').is(":checked");
+              },
+              amount: true,
+              min: parseFloat(Drupal.settings.fundraiserWebform.minimum_donation_amount),
+              max: parseFloat(Drupal.settings.fundraiserWebform.fundraiser_maximum_other_amount),
+              messages: {
+                required: Drupal.t("This field is required"),
+                amount: Drupal.t("Enter a valid amount"),
+                min: Drupal.t("The amount entered is less than the minimum donation amount.")
+              }
+            });
+          });
+        }
+
+        var $recurring_other_amount = $('input[name$="[recurring_other_amount]"]');
+        $($recurring_other_amount).blur(function () {
+          var recurringOtherAmountField = $(this);
+          if (recurringOtherAmountField.parent().children('.field-suffix').length > 0) {
+            var errorMessage = recurringOtherAmountField.parent().children('label.error').detach();
+            recurringOtherAmountField.parent().children('.description').after(errorMessage);
+          }
+        });
+
+        var recurringOtherRuleEnabled = false;
+        if ($recurring_other_amount.length) {
+          $recurring_other_amount.each(function() {
+            var $this = $(this);
+            var enableRecurringOtherRule = function() {
+              $this.rules('add', {
+                required: function(element) {
+                  var frequency = $('input[type="checkbox"][name*="[recurs_monthly]["], input[type="radio"][name*="[recurs_monthly]"]:checked').val();
+                  if (frequency === 'recurs') {
+                    var req = $('input[type="radio"][name$="[recurring_amount]"]:checked').length == 0
+                      || $('input[type="radio"][name$="[recurring_amount]"][value="other"]:visible').is(":checked");
+
+                    return req;
+                  }
+                  else {
+                    var req =  $('input[type="radio"][name$="[' + frequency + '_amount]"]:checked').length == 0
+                      || $('input[type="radio"][name$="[' + frequency + '_amount]"][value="other"]:visible').is(":checked");
+                    return req;
+                  }
+                },
+                amount: true,
+                min: function(){
+                  var frequency = $('input[type="checkbox"][name*="[recurs_monthly]["], input[type="radio"][name*="[recurs_monthly]"]:checked').val();
+                  if (frequency === 'recurs') {
+                    return parseFloat(Drupal.settings.fundraiserWebform.recurring_minimum_donation_amount)
+                  }
+                  else {
+                    if ($('input[type="radio"][name$="[' + frequency + '_amount]"]:checked').length) {
+                      var min = Drupal.settings.fundraiser.recurring_settings[frequency + '_minimum_donation_amount'];
+                      return parseFloat(min)
+                    }
+                    return parseFloat(Drupal.settings.fundraiserWebform.recurring_minimum_donation_amount)
+                  }
+                },
+                max: parseFloat(Drupal.settings.fundraiserWebform.fundraiser_maximum_other_amount),
+                messages: {
+                  required: Drupal.t("This field is required"),
+                  amount: Drupal.t("Enter a valid amount"),
+                  min: Drupal.t("The amount entered is less than the minimum donation amount.")
+                },
+              });
+              recurringOtherRuleEnabled = true;
+            };
+
+            // If the recurring other amount is hidden by default (in the case
+            // of dual ask amounts), we need to add it's rule when it becomes
+            // visible.
+            if (!$this.is(':visible') && !recurringOtherRuleEnabled) {
+              $('input[type="checkbox"][name*="[recurs_monthly]["], input[type="radio"][name*="[recurs_monthly]"]')
+                .on('change', function(e) {
+                  var $target = $(e.target);
+                  var frequency = $target.val();
+                  if ($target.is(':checked') &&
+                    ( frequency == 'recurs'
+                      || frequency == 'sb_fs_quarterly'
+                      || frequency == 'sb_fs_semi'
+                      || frequency == 'sb_fs_annually'
+                    )) {
+                  enableRecurringOtherRule();
+                }
+              });
+            }
+            else {
+              enableRecurringOtherRule();
+            }
+          });
+
+          $('input[name*="frequencies["], input[name="submitted[donation][amount]"], input[name="submitted[donation][recurring_amount]"]').change(function() {
+            if ($(this).filter(':checked').length) {
+              $(this).parent('.control-group').removeClass('error').addClass('success').siblings('.control-group').removeClass('error').addClass('success');
+            }
+          })
+        }
+
+        // If neither "other" field is present, add validation for the amount
+        // radios.
+        var recurSettings = Drupal.settings.fundraiser.recurring_settings;
+        // Multifrequency == at least two recurring frequencies are active on the form.
+        var multiFrequency = typeof(Drupal.settings.fundraiser.multi_frequency) != "undefined"
+
+        if (!$other_amount.length
+          || !recurSettings.recurs_show_other_amount == 0
+          || !recurSettings.sb_fs_quarterly_show_other_amount == 0
+          || !recurSettings.sb_fs_semi_show_other_amount == 0
+          || !recurSettings.sb_fs_annually_show_other_amount == 0
+        ) {
+
+          var selector = [];
+          var recurringRuleEnabled = false;
+
+          if (!$other_amount.length && $recurring_other_amount.length) {
+            if ($('input[name="submitted[donation][amount]"]:first').length > 0) {
+              selector.push($('input[name="submitted[donation][amount]"]:first'));
+            }
+          }
+          if (!$other_amount.length && !$recurring_other_amount.length) {
+            if ($('input[name="submitted[donation][amount]"]:first').length > 0) {
+              selector.push($('input[name="submitted[donation][amount]"]:first'));
+            }
+          }
+
+          if (typeof(recurSettings) != "undefined") {
+            $.each(recurSettings.active_frequencies, function(key, values) {
+              if (key === 'NO_RECURR') {
+                return;
+              }
+
+              var freq = key + '_show_other_amount';
+              if (recurSettings[freq] == 0) {
+                if (!multiFrequency || key =='recurs') {
+                  if($('input[name="submitted[donation][recurring_amount]"]:first').length > 0) {
+                    selector.push($('input[name="submitted[donation][recurring_amount]"]:first'));
+                  }
+                }
+                if (multiFrequency && key !== 'recurs') {
+                  if ($('input[name="frequencies[' + key + '_amount]"]:first').length > 0) {
+                    selector.push($('input[name="frequencies[' + key + '_amount]"]:first'));
+                  }
+                }
+              }
+            });
+          }
+
+          $.each(selector, function() {
+
+            var $this = this;
+
+            var enableRecurringRule = function() {
+              $this.rules('add', {
+                required: function(element) {
+                  return $this.siblings('input[type=radio]').filter(':checked').length == 0;
+                },
+                messages: {
+                  required: Drupal.t("This field is required"),
+                },
+              });
+              recurringRuleEnabled = true;
+            };
+
+            if (!$this.is(':visible') && !recurringRuleEnabled) {
+              $('input[type="checkbox"][name*="[recurs_monthly]["], input[type="radio"][name*="[recurs_monthly]"]').on('change', function(e) {
+                var $target = $(e.target);
+                var frequency = $target.val();
+                if ($target.is(':checked') &&
+                  ( frequency == 'recurs'
+                    || frequency == 'sb_fs_quarterly'
+                    || frequency == 'sb_fs_semi'
+                    || frequency == 'sb_fs_annually'
+                  )) {
+                  enableRecurringRule();
+                }
+              });
+            }
+            else {
+              enableRecurringRule();
+            }
+          });
+
+          $('input[name="submitted[donation][amount]"]').change(function() {
+            if ($(this).filter(':checked').length) {
+              $(this).parent('.control-group').removeClass('error').addClass('success').siblings('.control-group').removeClass('error').addClass('success');
+            }
+          });
+        }
+
+        // Focus and Blur conditional functions for non-recurring other amount.
+        $('input[type="radio"][name*="[amount]"]').change(function(){
+          if ($(this).val() == 'other') {
+            $('input[name*="[other_amount]"]').focus();
+          }
+          else {
+            clearElement($('input[name*="[other_amount]"]'));
+          }
+        });
+
+        $('input[name*="[other_amount]"]').focus(function(){
+          $('input[type="radio"][name*="[amount]"][value="other"]').attr('checked', 'checked');
+        });
+
+        // Focus and Blur conditional functions for recurring other amount.
+        if (typeof(recurSettings) != "undefined") {
+          $.each(recurSettings.active_frequencies, function(key, values) {
+            if (key === 'NO_RECURR') {
+              return;
+            }
+            if (!multiFrequency || key =='recurs') {
+              $('input[type="radio"][name*="[recurring_amount]"]').change(function(){
+                if ($(this).val() == 'other') {
+                  $('input[name*="[recurring_other_amount]"]').focus();
+                }
+                else {
+                  clearElement($('input[name*="[recurring_other_amount]"]'));
+                }
+              });
+            }
+            if (multiFrequency && key !== 'recurs') {
+              $('input[type="radio"][name*="[' + key + '_amount]"]').change(function(){
+                if ($(this).val() == 'other') {
+                  $('input[name*="[recurring_other_amount]"]').focus();
+                }
+                else {
+                  clearElement($('input[name*="[recurring_other_amount]"]'));
+                }
+              });
+            }
+          });
+        }
+
+        $('input[name*="[recurring_other_amount]"]').focus(function(){
+          var $recursValue = $('input[name*="[recurs_monthly]"]').filter(':checked').val();
+          switch($recursValue) {
+            case 'recurs':
+              $('input[type="radio"][name*="[recurring_amount]"][value="other"]').attr('checked', 'checked');
+              break;
+
+            default:
+              if (multiFrequency) {
+                $('input[type="radio"][name*="[' + $recursValue + '_amount]"][value="other"]').attr('checked', 'checked');
+              }
+              else {
+                $('input[type="radio"][name*="[recurring_amount]"][value="other"]').attr('checked', 'checked');
+              }
+          }
+        });
+
+        // Runs on Other Amount field
+        $('input[name*="other_amount"], input[name*="fee_amount"], input[name*="addon-amount"]').blur(function(){
+          var value = this.value;
+          // check for custom validation function object
+          if (undefined == window.customValidation) {
+            // If the value has length and includes at least one integer
+            if (value.length && this.value.match(/\d/g)) {
+              // Replace commas used as decimal place in international currency.
+              if (value.match(/\,/)) {
+                var count = value.length;
+                var pos = value.lastIndexOf(",");
+                if (pos !== -1) {
+                  // Is the comma the third-to-last character in the amount? Replace it with a decimal.
+                  var delimiterPosition = count - (pos + 1);
+                  if (delimiterPosition === 2) {
+                    value = value.substring(0, pos) + '.' + value.substring(pos + 1);
+                  }
+                }
+              }
+              // if no period period
+              if (!value.match(/\./)) {
+                // no decimals: strip all other chars, add decimal and 00
+                value = value.replace(/[^\d]+/g,'') + '.00';
+              } else {
+                // Remove all non-integer/period chars
+                value = value.replace(/[^\d\.]+/g,'')
+                // make first decimal unique
+                  .replace(/\./i,'-')
+                  // replace subsequent decimals
+                  .replace(/\./g,'')
+                  // set first back to normal
+                  .replace('-','.')
+                  // match the last two digits, removing others
+                  .match(/\d+\.\d{0,2}|\.\d{0,2}/);
+                var newValue = value[0];
+                if (newValue.match(/\.\d{2}/)) {
+                } else if (newValue.match(/\.\d{1}/)) {
+                  value += '0';
+                } else {
+                  value += '00';
+                }
+              }
+              this.value = value;
+              // total should be recalculated as value has changed without triggering .change() event handler.
+              _recalculate_quantity_total();
+              $(this).valid();
+            }
+          } else {
+            window.customValidation(value);
+            $(this).valid();
+          }
+        });
+
+        // Ability to override the default message
+        jQuery.extend(jQuery.validator.messages, {
+          required: Drupal.t("This field is required"),
+          remote: Drupal.t("Please fix this field"),
+          email: Drupal.t("Enter a valid email address"),
+          url: Drupal.t("Enter a valid URL"),
+          date: Drupal.t("Enter a valid date"),
+          dateISO: Drupal.t("Enter a valid date (ISO)"),
+          number: Drupal.t("Must be a number"), // changed
+          digits: Drupal.t("Enter only digits"),
+          creditcard: Drupal.t("Enter a valid credit card number"),
+          equalTo: Drupal.t("Enter the same value again"),
+          accept: Drupal.t("Enter a value with a valid extension"),
+          maxlength: jQuery.validator.format(Drupal.t("Enter no more than {0} characters")),
+          minlength: jQuery.validator.format(Drupal.t("Enter at least {0} characters")),
+          rangelength: jQuery.validator.format(Drupal.t("Enter a value between {0} and {1} characters long")),
+          range: jQuery.validator.format(Drupal.t("Enter a value between {0} and {1}")),
+          max: jQuery.validator.format(Drupal.t("Enter a value less than or equal to {0}")),
+          min: jQuery.validator.format(Drupal.t("Enter a value greater than or equal to {0}"))
+        });
+
+        // Small helper item
+        $('select').each(function(){
+          if ($(this).next().is('select')) {
+            $(this).next().addClass('spacer');
+          }
+        });
+
+        // Implementing our own alert close
+        // Bootstrap.js uses the .on method, not added until jQuery 1.7
+        $('.close').click(function(){
+          $(this).closest('.alert').fadeOut();
+        });
+
+      }); // window.ready
+    } // attach.function
+  } // drupal.behaviors
+})(
+  window.DonationValidation = window.DonationValidation || {},
+  jQuery);
+
+;
+(function ($) {
+  Drupal.behaviors.dualAskAmounts = {
+    attach: function (context, settings) {
+      $(window).ready(function () {
+
+        // Validate the recurring other amount field.
+        if ($('input[name$="recurring_other_amount]"]')[0]) {
+
+          // Find the relevant fields for validation context.
+          var recurs_monthly = $('input[type="checkbox"][name*="[recurs_monthly]["], input[type="radio"][name*="[recurs_monthly]"]:checked');
+          var frequency = recurs_monthly.val();
+          var recurring_other = $('input[name$="recurring_other_amount]"]');
+          var allFreq = Drupal.settings.defaultRecurringFrequencies;
+          // Add a rule for the default frequency.
+          addRule(frequency);
+
+          // Add a rule for the selected frequency.
+          $('input[type="checkbox"][name*="[recurs_monthly]["], input[type="radio"][name*="[recurs_monthly]"]')
+            .on('change', function (e) {
+              var $target = $(e.target);
+              var frequency = $target.val();
+              if ($target.is(':checked') &&
+                ( frequency == 'recurs'
+                  || frequency == 'sb_fs_quarterly'
+                  || frequency == 'sb_fs_semi'
+                  || frequency == 'sb_fs_annually'
+                )) {
+                if ($('input[type="radio"][name*="[recurs_monthly]"]').length) {
+                  var oneTime = $('input[type="radio"][name*="[recurs_monthly]"][value*="NO_RECURR"]').length
+                  var radSize = $('input[type="radio"][name*="[recurs_monthly]"]').length;
+                  if ((oneTime == 1 && radSize > 2) || oneTime == 0 && radSize > 1) {
+                    clearOther(recurring_other);
+                  }
+                }
+                addRule(frequency);
+              }
+            })
+
+        }
+      }); // window.ready
+
+      var clearOther = function ($selector) {
+
+        $selector
+          .val('')
+          .removeClass('valid')
+          .next('label')
+          .remove()
+          .end()
+          .parents('.success')
+          .removeClass('success')
+          .end()
+          .parents('.error')
+          .removeClass('error');
+      };
+
+
+      function addRule(frequency) {
+
+        $('input[name$="recurring_other_amount]"]').rules("add", {
+          // Require the amount validation.
+          amount: true,
+          // Minimum amount validation.
+          min: function () {
+
+            // If the default frequency is "recurs" or "NO_RECURR" the other amount field gets
+            // the 'recurs" minimum. The minimum is reset when a new frequency is chosen.
+            var min = parseFloat(Drupal.settings.fundraiserWebform.recurring_minimum_donation_amount);
+            var allFreq = Drupal.settings.defaultRecurringFrequencies;
+
+            // Validate minimum for non-monthly recurring. We exclude recurring here because it might not
+            // have a value yet on legacy forms.
+            if (frequency !== 'recurs' && $.inArray(frequency, allFreq) !== -1) {
+              var freqMin = Drupal.settings.fundraiser.recurring_settings[frequency + '_minimum_donation_amount'];
+              min = parseFloat(freqMin)
+            }
+            return min;
+          },
+          required: {
+            depends: function (element) {
+              if (frequency === 'recurs') {
+                var req = $('input[type="radio"][name$="[recurring_amount]"]:checked').length == 0
+                  || $('input[type="radio"][name$="[recurring_amount]"][value="other"]:visible').is(":checked");
+                return req;
+              }
+              else if (frequency !== 'NO_RECURR') {
+                var req = $('input[type="radio"][name$="[' + frequency + '_amount]"]:checked').length == 0
+                  || $('input[type="radio"][name$="[' + frequency + '_amount]"][value="other"]:visible').is(":checked");
+                return req;
+              }
+            }
+          },
+
+          messages: {
+            amount: Drupal.t("Enter a valid amount"),
+            min: Drupal.t("The amount entered is less than the minimum donation amount."),
+            required: Drupal.t("This field is required"),
+          }
+        });
+      }
+
+    } // attach.function
+  } // drupal.behaviors
+})(jQuery);
+;
+Drupal.behaviors.fundraiserGatewayBehavior = {
+
+  attach: function(context, settings) { (function($) {
+    // Payment selection triggered changes.
+    function paymentImages() {
+      var gateway = $(this).val();
+      var paymentId = this.id;
+      var text = Drupal.settings.fundraiser[gateway].text;
+      var labelImg = Drupal.settings.fundraiser[gateway].selected_image;
+      // Automatically change submit button text when payment gateway selected.
+      if (typeof(text) !== "undefined") {
+        var oldText = $("#edit-submit").val().toUpperCase();
+        $("#edit-submit").val(text);
+        var fsm = $(".fundraiser_submit_message");
+        if (fsm.length > 0) {
+          var fsmHtml = fsm.html().replace(oldText, text.toUpperCase());
+          fsm.html(fsmHtml);
+        }
+      }
+      $('label[for='+paymentId+'] img').attr('src', labelImg);
+      $("input[name='submitted[payment_information][payment_method]']").each(function(gateway) {
+        if (!$(this).is(":checked")) {
+          gateway = $(this).val();
+          var paymentId = this.id;
+          var labelImg = Drupal.settings.fundraiser[gateway].unselected_image;
+          $('label[for='+paymentId+'] img').attr('src', labelImg);
+        }
+      });
+    }
+
+    // Change payment method image on hover
+    function hoverInImage() {
+      var gateway = $(this).attr('data-gateway');
+      var paymentId = this.id;
+      var labelImg = Drupal.settings.fundraiser[gateway].selected_image;
+      $(this).attr('src', labelImg);
+    }
+
+    // Change payment method image after hover to selected default.
+    function hoverOutImage() {
+      var gateway = $(this).attr('data-gateway');
+      var parentLabel = $(this).parent();
+      var labelParent = parentLabel.attr('for');
+      var checked = $('#' + labelParent).is(':checked');
+      if (!checked) {
+        var labelImg = Drupal.settings.fundraiser[gateway].unselected_image;
+        $(this).attr('src', labelImg);
+      }
+    }
+
+    // Call change to payment method images and submit button on page load and selection/hover.
+    try {
+      if (Drupal.settings.fundraiser.enabled_count >= 1) {
+        // Set button text when page first loaded
+        // Loop over payment method radio fields to find selected
+        var paymentMethods = $('input[class*="fundraiser-payment-methods"]');
+        var paymentMethodSelected;
+        for(var i = 0; i < paymentMethods.length; i++){
+          if(paymentMethods[i].checked){
+            paymentMethodSelected = paymentMethods[i];
+          }
+        }
+        if (paymentMethodSelected == undefined) {
+          paymentMethodSelected = paymentMethods[0];
+        }
+        // Call our button/image change function with checked payment method on load.
+        paymentImages.call(paymentMethodSelected);
+
+        // Change payment option image based on payment selection and hover.
+        $('input[class*="fundraiser-payment-methods"]').change(paymentImages);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+    // Show payment option "selected" images when rolling over.
+    $('img[id*="payment-option-img"]').hover(hoverInImage, hoverOutImage);
+
+  })(jQuery); }
+};
+;
