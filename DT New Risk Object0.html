@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+
+		<title>Decision Tree: New Risk Object0</title>
+
+		<style>
+			body {
+			    font-size: 12px;
+				font-family: Arial;
+				margin: 0;
+				padding: 10px;
+			}
+			
+			table {
+				border:none;
+			}
+			
+			table input {
+				width: 75px;
+			}
+
+			table select {
+				width: 79px;
+			}
+			
+			table input[type=checkbox] {
+				width: auto;
+				margin-left: 0;
+			}
+
+			h2 {
+				text-align: center;
+			}
+			
+			div.collapsible-container h3 {
+				cursor: pointer;
+			}
+			
+			div#diagram, canvas {
+				margin: 0 0 0 10px;
+				background: white;
+			}
+
+			div#duration_log p {
+				margin: 0;
+				padding: 0;
+			}
+			
+			p.notice {
+				font-size: smaller;
+			}
+			
+			td.error::after {
+				content: " Error";
+			}
+			
+			td.error::after, p.error {
+				font-weight: bold;
+				color: red;
+				font-size: smaller;
+			}
+			
+			p#error_image_too_large {
+				display: none;
+			}
+			
+		</style>
+		
+		<style id="adjustible_css">
+			svg > g > text.link-label {
+				font-size: 12px;
+			}
+			
+			svg > g > g.node text {
+				font-size: 12px;
+			}
+			
+		</style>
+		
+		<style>
+			.collapsible-handle {
+				cursor: pointer;
+			}
+			
+			.collapsible-container .collapsible-panel {
+				overflow-y: hidden;
+			}
+			
+			.collapsible-container.collapsed .collapsible-panel {
+				height: 0px;
+			}
+			
+			.collapsible-container.expanded .collapsible-panel {
+				height: auto;
+			}
+			
+		</style>
+		
+		<script type="text/javascript" src="file:///C:/Program%20Files/AgenaRisk/lib/lib/js/d3.v3.min.js"></script> 
+		<script type="text/javascript" src="file:///C:/Program%20Files/AgenaRisk/lib/lib/js/dom4.js"></script> 
+		<script type="text/javascript" src="file:///C:/Program%20Files/AgenaRisk/lib/lib/js/rgbcolor.js"></script> 
+		<script type="text/javascript" src="file:///C:/Program%20Files/AgenaRisk/lib/lib/js/StackBlur.js"></script>
+		<script type="text/javascript" src="file:///C:/Program%20Files/AgenaRisk/lib/lib/js/canvg.js"></script>
+		
+	</head>
+
+	<body>
+
+		<h2>Decision Tree for: <span>New Risk Object [New Risk Object0]</span></h2>
+		<h2>Model: <span>Coursework model.cmpx</span></h2>
+		<h2>Generated: <span>09/03/22 22:11</span></h2>
+
+		<p>Scenario: <span>Scenario 1</span></p>
+		<p>Total build time: <span>91 ms</span></p>
+		
+		<p>Image size: <span id="width"></span>x<span id="height"></span></p>
+		<div id="graph_settings" class="collapsible-container">
+			<h3><span class="collapsible-handle" data-status="expanded" data-value-expanded="[-]" data-value-collapsed="[+]" data-default-collapsed="true">[+]</span> Adjust graph settings</h3>
+			<div class="collapsible-panel">
+				<form id="settings-form">
+					<table>
+						<tr class="setting">
+							<td class="name">Scaling (from 1 to 20):</td>
+							<td class="value"><input type="text" value="1" id="gp_scaling" name="gp_scaling" /></td>
+						</tr>
+						<tr class="setting">
+							<td class="name">Horizontal spacing (px): </td>
+							<td class="value"><input type="text" value="125" id="gp_horizontal_spacing" name="gp_horizontal_spacing" /></td>
+						</tr>
+						<tr class="setting">
+							<td class="name">Vertical spacing (px): </td>
+							<td class="value"><input type="text" value="50" id="gp_vertical_spacing" name="gp_vertical_spacing" /></td>
+						</tr>
+						<tr class="setting">
+							<td class="name">Node width (px): </td>
+							<td class="value"><input type="text" value="100" id="gp_node_width" name="gp_node_width" /></td>
+						</tr>
+						<tr class="setting">
+							<td class="name">Node height (px): </td>
+							<td class="value"><input type="text" value="60" id="gp_node_height" name="gp_node_height" /></td>
+						</tr>
+						<tr class="setting">
+							<td class="name">Node font size (pt, at scale = 1): </td>
+							<td class="value"><input type="text" value="9" id="gp_node_font_size" name="gp_node_font_size" /></td>
+						</tr>
+						<tr class="setting">
+							<td class="name">Arc font size (pt, at scale = 1): </td>
+							<td class="value"><input type="text" value="9" id="gp_arc_font_size" name="gp_arc_font_size" /></td>
+						</tr>
+						<tr class="setting">
+							<td class="name">Bold arcs font: </td>
+							<td class="value">
+								<select id="gp_optimal_arc_font" name="gp_optimal_arc_font">
+									<option value="normal">Normal</option>
+									<option value="bold">Bold</option>
+								</select>
+							</td>
+						</tr>
+						<tr class="setting">
+							<td class="name">Arc label borders for: </td>
+							<td class="value">
+								<select id="gp_arc_border" name="gp_arc_border">
+									<option value="none">None</option>
+									<option value="bold">Optimal</option>
+									<option value="all">All</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+					<p><button id="apply_graph_settings" type="submit">Apply</button></p>
+				</form>
+			</div>
+		</div>
+
+		<p id="error_image_too_large" class="error">Error: Image too large to be rasterised, showing SVG version instead</p>
+
+		<div id="diagram"></div>
+		
+		<canvas id="canvas" width="1000" height="600"></canvas>
+
+		<p>Please note that to open this report on a different device or operating system you may need to save the diagram as an image or save this report as an HTML page from your browser.</p>
+
+		<div id="duration_log" class="collapsible-container">
+			<h3><span class="collapsible-handle" data-status="expanded" data-value-expanded="[-]" data-value-collapsed="[+]" data-default-collapsed="true">[+]</span> Duration log</h3>
+			<div class="collapsible-panel">
+			<p>Model calculation	9	ms</p>
+<p>Model calculation	7	ms</p>
+<p>Model calculation	6	ms</p>
+<p>Model calculation	7	ms</p>
+<p>Model calculation	6	ms</p>
+<p>Model calculation	5	ms</p>
+<p>Model calculation	5	ms</p>
+<p>Model calculation	5	ms</p>
+<p>Model calculation	5	ms</p>
+<p>Model calculation	5	ms</p>
+<p>Model calculation	5	ms</p>
+<p>Model calculation	5	ms</p>
+<p>Model calculation	5	ms</p>
+<p>Model calculation	5	ms</p>
+<p>Model calculation	5	ms</p>
+<p>Calculation time	90	ms</p>
+
+			</div>
+		</div>
+
+		<script>
+
+			var diagram = document.getElementById("diagram");
+			if(diagram !== null){
+				diagram.setAttribute("style","display:block");
+			}
+			
+			bind_form_actions();
+			
+			register_compatibility_functions();
+			
+			var browser_msie = navigator.appVersion.indexOf('Trident') >= 0;
+			var browser_msedge = navigator.appVersion.indexOf('Edge') >= 0;
+			var browser_msieoredge = browser_msie || browser_msedge;
+			
+			var css_hash = {};
+			var graph_settings = {};
+			
+			import_css_rules();
+
+			/*let*/var start = read_graph_settings();
+			
+			var max_depth = 3;
+			
+			var leaf_count = 6;
+			
+			treeData = [
+				{
+     "arc_style": "bold",
+     "parent": "null",
+     "arc_value": "",
+     "shape": "rectangle",
+     "children": [
+          {
+               "arc_style": "",
+               "parent": 1,
+               "shape": "ellipse",
+               "children": [
+                    {
+                         "arc_style": "",
+                         "parent": 2,
+                         "arc_value": 0.6,
+                         "shape": "diamond",
+                         "children": [],
+                         "depth_original": 3,
+                         "name": 0,
+                         "id": "4",
+                         "arc_label": "Ban"
+                    },
+                    {
+                         "arc_style": "",
+                         "parent": 2,
+                         "arc_value": 0.3,
+                         "shape": "diamond",
+                         "children": [],
+                         "depth_original": 3,
+                         "name": 0,
+                         "id": "6",
+                         "arc_label": "Restrict"
+                    },
+                    {
+                         "arc_style": "",
+                         "parent": 2,
+                         "arc_value": 0.1,
+                         "shape": "diamond",
+                         "children": [],
+                         "depth_original": 3,
+                         "name": 0,
+                         "id": "8",
+                         "arc_label": "Full"
+                    }
+               ],
+               "depth_original": 1,
+               "name": "pandemic restrictions",
+               "id": "2",
+               "label": 0,
+               "arc_label": "No"
+          },
+          {
+               "arc_style": "bold",
+               "parent": 1,
+               "shape": "ellipse",
+               "children": [
+                    {
+                         "arc_style": "",
+                         "parent": 9,
+                         "arc_value": 0.6,
+                         "shape": "diamond",
+                         "children": [],
+                         "depth_original": 3,
+                         "name": -40000,
+                         "id": "11",
+                         "arc_label": "Ban"
+                    },
+                    {
+                         "arc_style": "",
+                         "parent": 9,
+                         "arc_value": 0.3,
+                         "shape": "diamond",
+                         "children": [],
+                         "depth_original": 3,
+                         "name": 35000,
+                         "id": "13",
+                         "arc_label": "Restrict"
+                    },
+                    {
+                         "arc_style": "",
+                         "parent": 9,
+                         "arc_value": 0.1,
+                         "shape": "diamond",
+                         "children": [],
+                         "depth_original": 3,
+                         "name": 260000,
+                         "id": "15",
+                         "arc_label": "Full"
+                    }
+               ],
+               "depth_original": 1,
+               "name": "pandemic restrictions",
+               "id": "9",
+               "label": 12500,
+               "arc_label": "Yes"
+          }
+     ],
+     "depth_original": 0,
+     "name": "confirm venue",
+     "id": "1",
+     "label": 12500,
+     "arc_label": ""
+}
+			];
+
+			d3.selection.prototype.moveToFront = function() {
+				return this.each(function(){
+					this.parentNode.appendChild(this);
+				});
+			};
+			
+			if (start){
+				apply_graph_settings();
+			}
+
+			function paint(){
+
+				var svg_old = document.getElementById("svg");
+				if (svg_old !== null){
+					svg_old.remove();
+				}
+				
+				node_width_half = node_width/2;
+				node_height_half = node_height/2;
+
+				canvas_width = (max_depth + 1) * width_per_level;
+				canvas_height = leaf_count*90;
+
+				width = canvas_width;
+				height = canvas_height;
+
+				width_original = canvas_width;
+				height_original = canvas_height;
+
+				document.getElementById("width").textContent = width;
+				document.getElementById("height").textContent = height;
+				
+				diamond_points = [
+					{"x":0,"y":-node_height_half},
+					{"x":node_width_half,"y":0},
+					{"x":0,"y":node_height_half},
+					{"x":-node_width_half,"y":0}
+				];
+
+				diamond_shape_string = diamond_points.map(function(point){return point.x+","+point.y;}).join(" ");
+
+				i = 0;
+				duration = 0;
+
+				tree = d3.layout.tree()
+				.nodeSize([vertical_distance/2+node_height, node_width])
+				.separation(function(a, b){
+					// Coordinates are inverted later (?), which is why using width and not height
+					// This is not exact distance but rather a proportional guideline for tree layout algorithm
+
+					if (a.depth_original === b.depth_original){
+						return max_depth + 1 - b.depth_original;
+					}
+					return max_depth + 0.5 - Math.min(a.depth_original, b.depth_original);
+					
+					/*
+					if (a.parent === b.parent){
+						return 1;
+					}
+					else {
+						return 2;
+					}
+					*/
+				});
+
+				diagonal = d3.svg.diagonal().projection(function(d) { return [d.y, d.x]; });
+
+				svg = d3.select("body div#diagram").append("svg")
+				.attr("id","svg")
+				.style("background-color", "#fff")
+				.attr("width", width)
+				.attr("height", height)
+				.append("g")
+				.attr("id","graphics-main")
+
+				root = treeData[0];
+				root.x0 = height / 2;
+				root.y0 = 0;
+
+				update(root);
+
+				d3.select(self.frameElement).style("height", canvas_height+"px");
+				
+				//setTimeout(function(){translate_g();},100);
+			}
+			
+			function update(source) {
+
+				// Compute the new tree layout.
+				var nodes = tree.nodes(root).reverse();
+				var links = tree.links(nodes);
+
+				// Normalize for fixed-depth (using inverted X-Y)
+				var prev = null;
+				nodes.reverse().forEach(function(d) {
+					// Move node to its proper column
+					
+					d.y = d.depth_original * width_per_level;
+					
+					if (typeof(d.children) !== "undefined"){
+						// Not leaf node
+						return;
+					}
+					
+					// Adjust node's row
+					if (prev !== null && (prev.depth_original-prev.parent.depth_original) > 1){
+						if (prev.x + node_height > d.x) {
+							prev.x = d.x - vertical_distance/2 - node_height;
+						}
+						prev = d;
+					}
+				});
+			   
+				// Update the nodes
+				var node = svg.selectAll("g.node").data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+				// Enter any new nodes at the parent's previous position.
+				var nodeEnter = node.enter()
+				.append("g")
+				.attr("class", function(d){
+					var class_string = "node " + d.shape;
+					if (d.arc_style !== ""){
+						class_string += " arc-" + d.arc_style;
+					}
+					return class_string;
+				})
+				//.attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+				;//.on("click", click);
+
+				d3.selectAll(".ellipse")
+				.append("ellipse")
+				.attr("class","node-shape")
+				.attr("rx", node_width_half)
+				.attr("ry", node_height_half);
+		
+				d3.selectAll(".rectangle")
+				.append("rect")
+				.attr("class","node-shape")
+				.attr("x",-node_width_half)
+				.attr("y",-node_height_half)
+				.attr("width", node_width)
+				.attr("height", node_height);
+		
+				d3.selectAll(".diamond")
+				.append("polygon")
+				.attr("class","node-shape")
+				.attr("points",diamond_shape_string);
+
+				d3.selectAll(".node-shape")
+				.style("fill", "#fff")
+				.attr("stroke-width", function(d){
+					if (d.arc_style === "bold"){
+						return 2;
+					}
+					return 1;
+				})
+				.attr("stroke", "#000");
+
+				nodeEnter.append("text")
+				.style('fill', '#000')
+				.attr("x",0)
+				.attr("y",0)
+				.attr("class","pos-center")
+				.attr("text-anchor", "middle")
+				.attr("font-weight", function(d){
+					if (d.arc_style === "bold"){
+						return "700";
+					}
+					return "normal";
+				})
+				.text(function(d){return d.name;})
+				.style("font-size",node_font_size+"pt");
+		
+				nodeEnter.append("text")
+				.style('fill', '#000')
+				.attr("x",0)
+				.attr("y",-35)
+				.attr("class","pos-above")
+				.attr("text-anchor", "middle")
+				.attr("font-weight", function(d){
+					if (d.arc_style === "bold"){
+						return "700";
+					}
+					return "normal";
+				})
+				.text(function(d){return d.label;})
+				.style("font-size",node_font_size+"pt");
+
+				 // Transition nodes to their new position.
+				 var nodeUpdate = node.transition()
+				.duration(duration)
+				.attr("transform", function(d) {
+					return "translate(" + d.y + "," + d.x + ")";
+				});
+
+				/*
+				nodeUpdate.select("circle")
+				.attr("r", 10)
+				.style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+				nodeUpdate.select("text").style("fill-opacity", 1);
+				*/
+
+				// Transition exiting nodes to the parent's new position.
+				var nodeExit = node.exit()
+				.transition()
+				.duration(duration)
+				//.attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+				.remove();
+
+				/*
+				nodeExit.select("circle").attr("r", 1e-6);
+				*/
+
+				nodeExit.select("text").style("fill-opacity", 1e-6);
+
+				// Update the links…
+				var link = svg.selectAll("path.link").data(links, function(d) { return d.target.id; });
+
+				// Enter any new links at the parent's previous position.
+				
+				/*
+				link.enter()
+				.insert("path", "g")
+				.attr("class", "link")
+				.attr("d", function(d) {
+					var o = {x: source.x0, y: source.y0};
+					return diagonal({source: o, target: o});
+				});
+				*/
+				
+				link.enter()
+				.insert("line","g")
+				.attr("class", "link")
+				.attr("x1", function(d) { return d.source.y; })
+				.attr("y1", function(d) { return d.source.x; })
+				.attr("x2", function(d) { return d.target.y; })
+				.attr("y2", function(d) { return d.target.x; })
+				.attr("stroke-width", function(d){
+					if (d.target.arc_style === "bold"){
+						return 3;
+					}
+					return 1;
+				})
+				.attr("stroke", "#000");
+				
+				
+
+				// Transition links to their new position.
+				link.transition()
+				.duration(duration)
+				.attr("d", diagonal);
+				
+				link.enter()
+				.insert("text")
+				.attr("class", "link-label")
+				.style('fill', '#000')
+				.text(function(d){
+					var arc_value = "";
+					if(typeof (d.target.arc_value) !== 'undefined'){
+						arc_value = "\n"+d.target.arc_value;
+					};
+					return d.target.arc_label+arc_value
+				})
+				.attr("text-anchor", "middle")
+				.attr("x",function(d){return (d.source.y +d.target.y)/2;})
+				.attr("y",function(d){return (d.source.x +d.target.x)/2;})
+				.style("font-size",arc_font_size+"pt");
+		
+				/*
+				d3.selectAll('text.link-label').each(function(d,i){
+					var text = d3.select(this);
+					if (text.text().match("\\n") !== null){
+						console.log(text);
+					}
+				});
+				*/
+				
+				
+				d3.selectAll('text.link-label').call(wrap_by_separator,"\n")
+				.attr("stroke-width", function(d){
+					if (d.target.arc_style === "bold" && optimal_arc_font === "bold"){
+						return 1;
+					}
+					return 0;
+				})
+				.attr("stroke", "#000");
+
+				d3.selectAll('text.link-label').each(function(arc){
+					var bold = false;
+					if (arc.target.arc_style === "bold"){
+						bold = true;
+					}
+
+					var bbox = this.getBBox();
+					var padding = 1;
+					if (bold){
+						padding = 2;
+					}
+					var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+					rect.setAttribute("class", "label-box");
+					rect.setAttribute("x", bbox.x - padding);
+					rect.setAttribute("y", bbox.y - padding);
+					rect.setAttribute("width", bbox.width + padding * 2);
+					rect.setAttribute("height", bbox.height + padding * 2);
+					rect.setAttribute("fill", "white");
+					rect.setAttribute("fill-opacity", 0.8);
+					if (bold && label_border == "bold" || label_border == "all"){
+						rect.setAttribute("fill-opacity", 0.9);
+						rect.setAttribute("stroke-width", 1);
+						rect.setAttribute("stroke", "#aaa")
+					}
+					document.getElementById("graphics-main").appendChild(rect);
+				});
+				
+				// Transition exiting nodes to the parent's new position.
+				link.exit().transition()
+				.duration(duration)
+				.attr("d", function(d) {
+					var o = {x: source.x, y: source.y};
+					return diagonal({source: o, target: o});
+				})
+				.remove();
+
+				// Stash the old positions for transition.
+				nodes.forEach(function(d) {
+					d.x0 = d.x;
+					d.y0 = d.y;
+				});
+				
+				d3.selectAll("g.node").moveToFront();
+				d3.selectAll("rect.label-box").moveToFront();
+				d3.selectAll("text.link-label").moveToFront();
+				
+				if (browser_msieoredge){
+					setTimeout(function(){
+						d3.selectAll("g.node").moveToFront();
+						d3.selectAll("rect.label-box").moveToFront();
+						d3.selectAll("text.link-label").moveToFront();
+					}, 500);
+				}
+			}
+
+			function wrap(text, width) {
+				text.each(function() {
+					var text = d3.select(this),
+					words = text.text().split(/\s+/).reverse(),
+					word,
+					line = [],
+					lineNumber = 0,
+					lineHeight = 1.1, // ems
+					y = text.attr("y")-20,
+					dy = parseFloat(text.attr("dy") || 0),
+					tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+					while (word = words.pop()) {
+						line.push(word);
+						tspan.text(line.join(" "));
+						if (tspan.node().getComputedTextLength() > width) {
+							line.pop();
+							tspan.text(line.join(" "));
+							line = [word];
+							tspan = text.append("tspan").attr("x", text.attr("x")).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+						}
+					}
+				});
+			}
+			
+			function read_graph_settings(){
+				
+				scaling = parseInt(document.getElementById("gp_scaling").value);
+				width_per_level = parseInt(document.getElementById("gp_horizontal_spacing").value);
+				node_width = parseInt(document.getElementById("gp_node_width").value);
+				node_height = parseInt(document.getElementById("gp_node_height").value);
+				vertical_distance = parseInt(document.getElementById("gp_vertical_spacing").value);
+				node_font_size = parseInt(document.getElementById("gp_node_font_size").value);
+				arc_font_size = parseInt(document.getElementById("gp_arc_font_size").value);
+				optimal_arc_font = document.getElementById("gp_optimal_arc_font").value;
+				label_border = document.getElementById("gp_arc_border").value;
+				
+				var validated_items = {};
+				errors = false;
+				find(document.getElementById("graph_settings"),"setting").forEach(function(el){
+					
+					/*let*/var key = el.querySelector('td.name').textContent.trim().replace(/\s*(\(.*\))*:\s*$/,"");
+					/*let*/var input = el.querySelector('input,select');
+					input.parentElement.classList.remove('error');
+					/*let*/var val = input.value;
+					
+					if (key === "Arc label borders for" || key === "Bold arcs font"){
+						// No validation required here
+						return;
+					}
+					
+					if (val.length === 0 || isNaN(val) === true){
+						errors = true;
+						input.parentElement.classList.add('error');
+					}
+					
+					if (key === "Scaling" && (val <= 0 || val > 20)){
+						errors = true;
+						input.parentElement.classList.add('error');
+					}
+					
+					validated_items[key] = parseInt(val);
+				});
+				
+				if (errors){
+					return false;
+				}
+				
+				/*
+				css_hash["svg > g > g.node text"].style.fontSize = node_font_size+"pt";
+				css_hash["svg > g > text.link-label"].style.fontSize = arc_font_size+"pt";
+				*/
+			   
+				return true;
+			}
+			
+			function declare_image_size(){
+				var svg = document.getElementById("svg");
+				var g = document.getElementById("graphics-main");
+				var gbbox = g.getBoundingClientRect();
+				
+				var width = parseInt(gbbox.width + 2);
+				var height = parseInt(gbbox.height + 2);
+				
+				document.getElementById("width").textContent = width;
+				document.getElementById("height").textContent = height;
+				svg.setAttribute("width", width);
+				svg.setAttribute("height", height);
+			}
+			
+			function apply_scaling(){
+				var g = document.getElementById("graphics-main");
+				
+				g.setAttribute('transform',"scale("+scaling+")");
+				//g.style["-webkit-transform"] = "scale("+scaling+")";
+				
+				deferred_on_animation_end(g, function(){
+					declare_image_size();
+				});
+			}
+			
+			function deferred_on_animation_end(element, callback){
+				var bbox_prev = null;
+				
+				var timer = setInterval(function(){
+					if (timer === null){
+						return false;
+					}
+					if (element == null){
+						clearInterval(timer);
+						//console.log("element is null");
+						return;
+					}
+					var bbox = element.getBoundingClientRect();
+					if (bbox_prev !== null && bbox.top === bbox_prev.top && bbox.left === bbox_prev.left){
+						clearInterval(timer);
+						timer = null;
+						callback();
+					}
+					bbox_prev = bbox;
+				},10);
+			}
+
+			function apply_graph_settings(){
+				
+				if (!read_graph_settings()){
+					return false;
+				}
+				
+				paint();
+				apply_scaling();
+				deferred_on_animation_end(document.getElementById("svg"), function(){
+					translate_g();
+					deferred_on_animation_end(document.getElementById("graphics-main"), function(){
+						translate_labels();
+						setTimeout(function(){save();},100);
+					});
+				});
+				
+			}
+
+			/**
+			 * Translates the whole diagram so that it is in a proper position after e.g. scaling
+			 * @returns {undefined}
+			 */
+			function translate_g(){
+				svg = document.getElementById("svg");
+				svg_bbox = svg.getBoundingClientRect();
+				g = document.getElementById("graphics-main");
+				g_bbox = g.getBoundingClientRect();
+
+				var g_translate_top = svg_bbox.top - g_bbox.top;
+				var g_translate_left = svg_bbox.left - g_bbox.left;
+
+				// -webkit-transform not working for MS Trident or Edge
+				//var style = g.style["-webkit-transform"];
+				var style = g.getAttribute('transform');
+				style = style.replace(/\s*translate([0-9aA-zZ, \.]*)\s*/);
+				g.setAttribute('transform', style + " translate(" + (1 + g_translate_left / scaling) + "," + (1 + g_translate_top / scaling) + ")")
+				//g.style["-webkit-transform"] = style + " translate(" + (1 + g_translate_left / scaling) + "px," + (1 + g_translate_top / scaling) + "px)";
+			}
+			
+			/**
+			 * Puts node labels just above and node names in the vertical middle of nodes
+			 * @returns {undefined}
+			 */
+			function translate_labels(){
+				document.querySelectorAll("svg .node").forEach(function(n){
+					var node_bb = find(n, "node-shape")[0].getBoundingClientRect();
+					
+					find(n, "pos-above").forEach(function(label){
+						var label_bb = label.getBoundingClientRect();
+						var translate_top = node_bb.top - label_bb.top - label_bb.height - 2;
+						label.setAttribute('transform','translate(0,'+translate_top/scaling+')');
+					});
+					find(n, "pos-center").forEach(function(label){
+						var label_bb = label.getBoundingClientRect();
+						var translate_top = node_bb.top - label_bb.top + (node_bb.height - label_bb.height)/2;
+						label.setAttribute('transform','translate(0,'+translate_top/scaling+')');
+					});
+				})
+			}
+
+			function wrap_by_separator(text, separator) {
+				text.each(function() {
+					var text = d3.select(this),
+					words = text.text().split(separator).reverse(),
+					words_count = words.length,
+					word,
+					lineNumber = 0,
+					lineHeight = 1.1, // ems
+					y = text.attr("y")-20,
+					dy = parseFloat(text.attr("dy") || 0);
+					text.text(null);
+					while (word = words.pop()) {
+						text.append("tspan")
+						.attr("x", text.attr("x"))
+						.attr("dx", (words_count==1?10:0))
+						.attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em")
+						.text(word);
+					}
+				});
+			}
+			
+			function save(){
+				var canvas = document.getElementById("canvas");
+				var diagram = document.getElementById('diagram');
+				if (navigator.appVersion.indexOf('Edge') >= 0 || navigator.appVersion.indexOf('Trident') >= 0){
+					// Keep SVG for Edge or IE11
+					canvas.setAttribute("style","display:none");
+					return;
+				}
+				var svg = document.querySelector('svg');
+				var serializer = new XMLSerializer();
+				var svgString = serializer.serializeToString(svg);
+				var canvas = document.getElementById("canvas");
+				canvg(canvas, svgString, {ignoreMouse: true});
+				
+				var ctx = canvas.getContext('2d');
+				ctx.globalCompositeOperation = 'destination-over';
+				ctx.fillStyle = svg.style["backgroundColor"];
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+				var theImage = canvas.toDataURL('image/png');
+				
+				var error_p = document.getElementById("error_image_too_large");
+				if (theImage == "data:,"){
+					canvas.setAttribute("style","display:none");
+					diagram.setAttribute('style', 'display:block');
+					error_p.setAttribute('style', 'display:block');
+			}
+				else {
+					canvas.setAttribute("style","display:block");
+					diagram.setAttribute('style', 'display:none');
+					error_p.setAttribute('style', 'display:none');
+				}
+			
+			}
+			
+			/**
+			 * Finds the closest ancestor with given class
+			 * @param {type} el descendant element
+			 * @param {type} cls given class
+			 * @returns Element
+			 */
+			function findAncestor (el, cls) {
+				while ((el = el.parentElement) && !el.classList.contains(cls));
+				return el;
+			}
+			
+			/**
+			 * Finds all descendants with given class recursively
+			 * @param {type} el ancestor element
+			 * @param {type} cls given class
+			 * @returns Array
+			 */
+			function find(el, cls) {
+				var children = el.children;
+				var found = [];
+				
+				if (children === null || typeof(children) === 'undefined'){
+					return found;
+				}
+				
+				for(var i = 0; i < children.length; i++){
+					var child = children[i];
+					if (child.classList.contains(cls)){
+						found.push(child);
+					}
+					found = found.concat(find(child, cls));
+				}
+				return found;
+			}
+			
+			function import_css_rules(){
+				var rules = document.getElementById('adjustible_css').sheet.cssRules;
+				for(/*let*/var i in rules){
+					/*let*/var selector = rules[i].selectorText;
+					if (typeof(selector) !== 'undefined'){
+						css_hash[selector] = rules[i];
+					}
+				}
+			}
+		
+			/**
+			 * Bindings for collapsible panels
+			 * @param {type} constructor
+			 * @returns {undefined}
+			 */
+			document.addEventListener("DOMContentLoaded", function() { 
+				var els = document.getElementsByClassName("collapsible-handle");
+				for (var i = 0; i < els.length; i++) {
+					var el = els[i];
+					var el_header = el.parentElement;
+					
+					el_header.onclick = function(){
+						el = find(this,"collapsible-handle")[0];
+						
+						var parent = findAncestor(el, "collapsible-container");
+						if (el.getAttribute("data-status") == "expanded"){
+							el.setAttribute("data-status","collapsed");
+							el.textContent = el.getAttribute("data-value-collapsed");
+							parent.classList.remove("expanded");
+							parent.classList.add("collapsed");
+						}
+						else {
+							el.setAttribute("data-status","expanded");
+							el.textContent = el.getAttribute("data-value-expanded");
+							parent.classList.remove("collapsed");
+							parent.classList.add("expanded");
+						}
+						return false;
+					};
+
+					if (el.getAttribute("data-default-collapsed") == "true" && el.getAttribute("data-status") == "expanded"){
+						el.click(el);
+					}
+				}
+			});
+			
+			/**
+			 * Registers various functionality not supported by some browsers
+			 * @returns {undefined}
+			 */
+			function register_compatibility_functions(){
+				// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
+				// Production steps of ECMA-262, Edition 5, 15.4.4.18
+				// Reference: http://es5.github.io/#x15.4.4.18
+				if (!Array.prototype.forEach) {
+
+					Array.prototype.forEach = function(callback/*, thisArg*/) {
+
+						var T, k;
+
+						if (this == null) {
+						  throw new TypeError('this is null or not defined');
+						}
+
+						// 1. Let O be the result of calling toObject() passing the
+						// |this| value as the argument.
+						var O = Object(this);
+
+						// 2. Let lenValue be the result of calling the Get() internal
+						// method of O with the argument "length".
+						// 3. Let len be toUint32(lenValue).
+						var len = O.length >>> 0;
+
+						// 4. If isCallable(callback) is false, throw a TypeError exception. 
+						// See: http://es5.github.com/#x9.11
+						if (typeof callback !== 'function') {
+							throw new TypeError(callback + ' is not a function');
+						}
+
+						// 5. If thisArg was supplied, let T be thisArg; else let
+						// T be undefined.
+						if (arguments.length > 1) {
+							T = arguments[1];
+						}
+
+						// 6. Let k be 0.
+						k = 0;
+
+						// 7. Repeat while k < len.
+						while (k < len) {
+
+							var kValue;
+
+							// a. Let Pk be ToString(k).
+							//    This is implicit for LHS operands of the in operator.
+							// b. Let kPresent be the result of calling the HasProperty
+							//    internal method of O with argument Pk.
+							//    This step can be combined with c.
+							// c. If kPresent is true, then
+							if (k in O) {
+
+								// i. Let kValue be the result of calling the Get internal
+								// method of O with argument Pk.
+								kValue = O[k];
+
+								// ii. Call the Call internal method of callback with T as
+								// the this value and argument list containing kValue, k, and O.
+								callback.call(T, kValue, k, O);
+							}
+							// d. Increase k by 1.
+							k++;
+						}
+						// 8. return undefined.
+					};
+				}
+				
+				// https://developer.mozilla.org/en-US/docs/Web/API/NodeList/forEach
+				if (window.NodeList && !NodeList.prototype.forEach) {
+					NodeList.prototype.forEach = function (callback, argument) {
+						argument = argument || window;
+						for (var i = 0; i < this.length; i++) {
+							callback.call(argument, this[i], i, this);
+						}
+					};
+				}
+				
+				// https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/children
+				// Overwrites native 'children' prototype.
+				// Adds Document & DocumentFragment support for IE9 & Safari.
+				// Returns array instead of HTMLCollection.
+				;(function(constructor) {
+					if (constructor &&
+						constructor.prototype &&
+						constructor.prototype.children == null) {
+						Object.defineProperty(constructor.prototype, 'children', {
+							get: function() {
+								var i = 0, node, nodes = this.childNodes, children = [];
+								while (node = nodes[i++]) {
+									if (node.nodeType === 1) {
+										children.push(node);
+									}
+								}
+								return children;
+							}
+						});
+					}
+				})(window.Node || window.Element);
+				
+			}
+			
+			/**
+			 * Intercepts form submit to apply settings and prevent page reload
+			 * @returns {undefined}
+			 */
+			function bind_form_actions(){
+				var form = document.getElementById('settings-form');
+				
+				var callback = function(event){
+					document.getElementById('diagram').setAttribute('style', 'display:block');
+					event.stopPropagation();
+					event.preventDefault();
+					apply_graph_settings();
+					return false;
+				};
+				
+				if(form.addEventListener){
+					form.addEventListener("submit", callback, false);  //Modern browsers
+				}
+				else if(form.attachEvent){
+					form.attachEvent('onsubmit', callback);            //Old IE
+				}
+			}
+			
+		</script>
+
+		<div id="copyrights" class="collapsible-container">
+			<h3><span class="collapsible-handle" data-status="expanded" data-value-expanded="[-]" data-value-collapsed="[+]" data-default-collapsed="true">[+]</span> Copyright and References</h3>
+			<div class="collapsible-panel">
+				<p class="notice">This diagram was built with the use of libraries found in "C:\Program Files\AgenaRisk\lib\lib\js\", see relevant licenses in "C:\Program Files\AgenaRisk\lib\lib\licenses\".</p>
+				<p class="notice">Scripts in this page use the works below:</p>
+				<p class="notice"><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach">Web/JavaScript/Reference/Global_Objects/Array/forEach</a> by <a href="https://developer.mozilla.org/en-US/docs/MDN/About$history" class="new">Mozilla Contributors</a> is licensed under <a href="http://creativecommons.org/licenses/by-sa/2.5/" class="external external-icon">CC-BY-SA 2.5</a>.</p>
+				<p class="notice"><a href="https://developer.mozilla.org/en-US/docs/Web/API/NodeList/forEach">Web/API/NodeList/forEach</a> by <a href="https://developer.mozilla.org/en-US/docs/MDN/About$history" class="new">Mozilla Contributors</a> is licensed under <a href="http://creativecommons.org/licenses/by-sa/2.5/" class="external external-icon">CC-BY-SA 2.5</a>.</p>
+				<p class="notice"><a href="https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/children">Web/API/ParentNode/children</a> by <a href="https://developer.mozilla.org/en-US/docs/MDN/About$history" class="new">Mozilla Contributors</a> is licensed under <a href="http://creativecommons.org/licenses/by-sa/2.5/" class="external external-icon">CC-BY-SA 2.5</a>.</p>
+			</div>
+		</div>
+
+	</body>
+</html>
