@@ -1,0 +1,11 @@
+Police_Force_Name,Year,Quarter,Detailed_Offence_Description,Offence_Group,Offence_Subgroup,Number_of_Arrests
+Sussex,2020,3,Causing sexual activity without consent,Miscellaneous crimes against society,Possession of drugs,-215
+Kent,2021,1,Other drug offences,Criminal damage and arson,Domestic burglary,-976
+Essex,2021,3,Aggravated Burglary Residential,Drug offences,Possession of weapons offences,-553
+Surrey,2019,3,Aggravated vehicle taking,Sexual offences,Arson,71
+Northamptonshire,2021,1,Robbery of business property,Criminal damage and arson,Public order offences,517
+North Wales,2021,1,Threats to kill,Criminal damage and arson,Miscellaneous crimes,655
+Wiltshire,2020,1,Racially or religiously aggravated assault without injury,Miscellaneous crimes against society,Violence without injury,-451
+Humberside,2021,3,Kidnapping,Sexual offences,Possession of drugs,400
+Humberside,2019,1,Attempted distraction burglary in a dwelling,Theft offences,Theft from a vehicle,-399
+Kent,2020,1,Attempted Burglary Residential,Drug offences,Theft from a vehicle,243
