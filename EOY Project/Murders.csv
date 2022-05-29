@@ -1,0 +1,247 @@
+,Unnamed: 0,Police_Force_Name,Year,Quarter,Detailed_Offence_Description,Offence_Group,Offence_Subgroup,Number_of_Arrests,Arrests_Ranked,Level_of_Lockdown,Region
+0,0,Avon and Somerset,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,South West
+109,109,British Transport Police,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,British Transport Police
+148,148,Cambridgeshire,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,East Midlands
+282,282,Derbyshire,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,West Midlands
+566,566,Gloucestershire,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+726,726,Hertfordshire,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,South East
+813,813,Kent,2020,1,Homicide,Violence against the person,Homicide,0,(-0.001. 20.0],High,South East
+914,914,Lancashire,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,West Midlands
+1146,1146,Metropolitan Police,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,South East
+1393,1393,Northumbria,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,North
+1594,1594,Staffordshire,2020,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],High,West Midlands
+1990,1990,West Midlands,2020,1,Homicide,Violence against the person,Homicide,6,(-0.001. 20.0],High,West Midlands
+2062,2062,West Yorkshire,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,East Midlands
+2244,2244,Avon and Somerset,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+3857,3857,Cambridgeshire,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,East Midlands
+4486,4486,Cheshire,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,West Midlands
+4487,4487,Cheshire,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,West Midlands
+5031,5031,Cleveland,2020,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],High,North
+5032,5032,Cleveland,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,North
+5590,5590,Cumbria,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,North
+6079,6079,Derbyshire,2020,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],High,West Midlands
+6080,6080,Derbyshire,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,West Midlands
+6708,6708,Devon and Cornwall,2020,1,Homicide,Violence against the person,Homicide,5,(-0.001. 20.0],High,South West
+6709,6709,Devon and Cornwall,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+7903,7903,Durham,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,North
+8555,8555,Dyfed-Powys,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+8556,8556,Dyfed-Powys,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+9022,9022,Essex,2020,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],High,South East
+9023,9023,Essex,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South East
+10225,10225,Gwent,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+10226,10226,Gwent,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+10738,10738,Hampshire,2020,1,Homicide,Violence against the person,Homicide,6,(-0.001. 20.0],High,South East
+10739,10739,Hampshire,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,South East
+11946,11946,Humberside,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,East Midlands
+12593,12593,Kent,2020,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],High,South East
+13255,13255,Lancashire,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,West Midlands
+14006,14006,Leicestershire,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,East Midlands
+14721,14721,Lincolnshire,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,East Midlands
+15463,15463,Merseyside,2020,1,Homicide,Violence against the person,Homicide,5,(-0.001. 20.0],High,West Midlands
+16154,16154,Metropolitan Police,2020,1,Homicide,Violence against the person,Homicide,25,(20.0. 40.0],High,South East
+16155,16155,Metropolitan Police,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,South East
+16921,16921,Norfolk,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,East Midlands
+17579,17579,North Wales,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+18689,18689,Northamptonshire,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,East Midlands
+19264,19264,Northumbria,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,North
+19918,19918,Nottinghamshire,2020,1,Homicide,Violence against the person,Homicide,6,(-0.001. 20.0],High,East Midlands
+20632,20632,South Wales,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+20633,20633,South Wales,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+21213,21213,South Yorkshire,2020,1,Homicide,Violence against the person,Homicide,5,(-0.001. 20.0],High,East Midlands
+22519,22519,Suffolk,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,East Midlands
+22520,22520,Suffolk,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,East Midlands
+23101,23101,Surrey,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South East
+23737,23737,Sussex,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,South East
+23738,23738,Sussex,2020,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],High,South East
+24501,24501,Thames Valley,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,South East
+25221,25221,Warwickshire,2020,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],High,West Midlands
+25736,25736,West Mercia,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,South West
+26351,26351,West Midlands,2020,1,Homicide,Violence against the person,Homicide,14,(-0.001. 20.0],High,West Midlands
+26352,26352,West Midlands,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,West Midlands
+26992,26992,West Yorkshire,2020,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],High,East Midlands
+28335,28335,Avon and Somerset,2019,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],No Lockdown,South West
+28336,28336,Avon and Somerset,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+29047,29047,Bedfordshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South East
+29523,29523,British Transport Police,2019,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],No Lockdown,British Transport Police
+29524,29524,British Transport Police,2019,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],No Lockdown,British Transport Police
+29525,29525,British Transport Police,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,British Transport Police
+30008,30008,Cambridgeshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+30009,30009,Cambridgeshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+30666,30666,Cheshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,West Midlands
+31250,31250,Cleveland,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,North
+31251,31251,Cleveland,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,North
+31789,31789,Cumbria,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,North
+32350,32350,Derbyshire,2019,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],No Lockdown,West Midlands
+33040,33040,Devon and Cornwall,2019,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],No Lockdown,South West
+34359,34359,Durham,2019,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],No Lockdown,North
+34951,34951,Dyfed-Powys,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+35549,35549,Essex,2019,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],No Lockdown,South East
+36202,36202,Gloucestershire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+36835,36835,Greater Manchester,2019,1,Homicide,Violence against the person,Homicide,12,(-0.001. 20.0],No Lockdown,West Midlands
+36836,36836,Greater Manchester,2019,1,Homicide,Violence against the person,Homicide,5,(-0.001. 20.0],No Lockdown,West Midlands
+37590,37590,Gwent,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+38208,38208,Hampshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South East
+38910,38910,Hertfordshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South East
+38911,38911,Hertfordshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South East
+38912,38912,Hertfordshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South East
+39553,39553,Humberside,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+40252,40252,Kent,2019,1,Homicide,Violence against the person,Homicide,0,(-0.001. 20.0],No Lockdown,South East
+40253,40253,Kent,2019,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],No Lockdown,South East
+41056,41056,Lancashire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,West Midlands
+41057,41057,Lancashire,2019,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],No Lockdown,West Midlands
+41883,41883,Leicestershire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+41884,41884,Leicestershire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+42580,42580,Lincolnshire,2019,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],No Lockdown,East Midlands
+42581,42581,Lincolnshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+42582,42582,Lincolnshire,2019,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],No Lockdown,East Midlands
+43452,43452,Merseyside,2019,1,Homicide,Violence against the person,Homicide,5,(-0.001. 20.0],No Lockdown,West Midlands
+43453,43453,Merseyside,2019,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],No Lockdown,West Midlands
+44217,44217,Metropolitan Police,2019,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],No Lockdown,South East
+44218,44218,Metropolitan Police,2019,1,Homicide,Violence against the person,Homicide,27,(20.0. 40.0],No Lockdown,South East
+44219,44219,Metropolitan Police,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South East
+44220,44220,Metropolitan Police,2019,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],No Lockdown,South East
+44985,44985,Norfolk,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+44986,44986,Norfolk,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+46253,46253,North Yorkshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,North
+46838,46838,Northamptonshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+46839,46839,Northamptonshire,2019,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],No Lockdown,East Midlands
+47475,47475,Northumbria,2019,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],No Lockdown,North
+47476,47476,Northumbria,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,North
+48932,48932,South Wales,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+48933,48933,South Wales,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+49591,49591,South Yorkshire,2019,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],No Lockdown,East Midlands
+49592,49592,South Yorkshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+49593,49593,South Yorkshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+50258,50258,Staffordshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,West Midlands
+50874,50874,Suffolk,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+51525,51525,Surrey,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South East
+51526,51526,Surrey,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South East
+51527,51527,Surrey,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South East
+52246,52246,Sussex,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South East
+53015,53015,Thames Valley,2019,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],No Lockdown,South East
+54254,54254,West Mercia,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+54255,54255,West Mercia,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+54256,54256,West Mercia,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+54257,54257,West Mercia,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+55012,55012,West Midlands,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,West Midlands
+55013,55013,West Midlands,2019,1,Homicide,Violence against the person,Homicide,11,(-0.001. 20.0],No Lockdown,West Midlands
+55014,55014,West Midlands,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,West Midlands
+55828,55828,West Yorkshire,2019,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],No Lockdown,East Midlands
+55829,55829,West Yorkshire,2019,1,Homicide,Violence against the person,Homicide,6,(-0.001. 20.0],No Lockdown,East Midlands
+55830,55830,West Yorkshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,East Midlands
+56518,56518,Wiltshire,2019,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],No Lockdown,South West
+56805,56805,Avon and Somerset,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,South West
+56906,56906,Bedfordshire,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,South East
+56997,56997,British Transport Police,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,British Transport Police
+57236,57236,Cleveland,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,North
+57322,57322,Cumbria,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,North
+57409,57409,Derbyshire,2021,3,Homicide,Violence against the person,Homicide,7,(-0.001. 20.0],Low,West Midlands
+57502,57502,Devon and Cornwall,2021,3,Homicide,Violence against the person,Homicide,6,(-0.001. 20.0],Low,South West
+57678,57678,Durham,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,North
+57834,57834,Essex,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,South East
+57926,57926,Gloucestershire,2021,3,Homicide,Violence against the person,Homicide,5,(-0.001. 20.0],Low,South West
+58009,58009,Greater Manchester,2021,3,Homicide,Violence against the person,Homicide,9,(-0.001. 20.0],Low,West Midlands
+58199,58199,Hampshire,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,South East
+58305,58305,Hertfordshire,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,South East
+58396,58396,Humberside,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,East Midlands
+58491,58491,Kent,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,South East
+58596,58596,Lancashire,2021,3,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Low,West Midlands
+58700,58700,Leicestershire,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,East Midlands
+58790,58790,Lincolnshire,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,East Midlands
+58932,58932,Merseyside,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,West Midlands
+59030,59030,Metropolitan Police,2021,3,Homicide,Violence against the person,Homicide,5,(-0.001. 20.0],Low,South East
+59140,59140,Norfolk,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,East Midlands
+59236,59236,North Wales,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,South West
+59332,59332,North Yorkshire,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,North
+59418,59418,Northamptonshire,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,East Midlands
+59681,59681,South Wales,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,South West
+59772,59772,South Yorkshire,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,East Midlands
+59865,59865,Staffordshire,2021,3,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Low,West Midlands
+59960,59960,Suffolk,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,East Midlands
+60048,60048,Surrey,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,South East
+60341,60341,Warwickshire,2021,3,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Low,West Midlands
+60422,60422,West Mercia,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,South West
+60520,60520,West Midlands,2021,3,Homicide,Violence against the person,Homicide,6,(-0.001. 20.0],Low,West Midlands
+60621,60621,West Yorkshire,2021,3,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Low,East Midlands
+61375,61375,Bedfordshire,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,South East
+62625,62625,Cheshire,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,West Midlands
+65667,65667,Durham,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,North
+66222,66222,Dyfed-Powys,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,South West
+66665,66665,Essex,2021,3,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Low,South East
+67753,67753,Greater Manchester,2021,3,Homicide,Violence against the person,Homicide,7,(-0.001. 20.0],Low,West Midlands
+67754,67754,Greater Manchester,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,West Midlands
+67755,67755,Greater Manchester,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,West Midlands
+68978,68978,Hampshire,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,South East
+71168,71168,Lancashire,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,West Midlands
+71775,71775,Leicestershire,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,East Midlands
+72429,72429,Lincolnshire,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,East Midlands
+72951,72951,Merseyside,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,West Midlands
+73613,73613,Metropolitan Police,2021,3,Homicide,Violence against the person,Homicide,34,(20.0. 40.0],Low,South East
+74245,74245,Norfolk,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,East Midlands
+74818,74818,North Wales,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,South West
+76764,76764,Nottinghamshire,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,East Midlands
+77351,77351,South Wales,2021,3,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Low,South West
+77956,77956,South Yorkshire,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,East Midlands
+78668,78668,Staffordshire,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,West Midlands
+79231,79231,Suffolk,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,East Midlands
+80358,80358,Sussex,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,South East
+80942,80942,Thames Valley,2021,3,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Low,South East
+81528,81528,Warwickshire,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,West Midlands
+81943,81943,West Mercia,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,South West
+81944,81944,West Mercia,2021,3,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Low,South West
+82487,82487,West Midlands,2021,3,Homicide,Violence against the person,Homicide,7,(-0.001. 20.0],Low,West Midlands
+83113,83113,West Yorkshire,2021,3,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Low,East Midlands
+84135,84135,Avon and Somerset,2021,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Medium,South West
+84421,84421,Cheshire,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,West Midlands
+84489,84489,Cleveland,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,North
+84550,84550,Cumbria,2021,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Medium,North
+84603,84603,Derbyshire,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,West Midlands
+84677,84677,Devon and Cornwall,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,South West
+84920,84920,Essex,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,South East
+85068,85068,Greater Manchester,2021,1,Homicide,Violence against the person,Homicide,7,(-0.001. 20.0],Medium,West Midlands
+85243,85243,Hampshire,2021,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Medium,South East
+85481,85481,Kent,2021,1,Homicide,Violence against the person,Homicide,0,(-0.001. 20.0],Medium,South East
+85586,85586,Lancashire,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,West Midlands
+85672,85672,Leicestershire,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,East Midlands
+85766,85766,Lincolnshire,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,East Midlands
+85852,85852,Merseyside,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,West Midlands
+85930,85930,Metropolitan Police,2021,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Medium,South East
+86330,86330,Northumbria,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,North
+86488,86488,South Wales,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,South West
+86563,86563,South Yorkshire,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,East Midlands
+86645,86645,Staffordshire,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,West Midlands
+86866,86866,Sussex,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,South East
+87042,87042,Warwickshire,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,West Midlands
+87097,87097,West Mercia,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,South West
+87167,87167,West Midlands,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,West Midlands
+87262,87262,West Yorkshire,2021,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Medium,East Midlands
+88865,88865,Cambridgeshire,2021,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Medium,East Midlands
+89419,89419,Cheshire,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,West Midlands
+89973,89973,Cleveland,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,North
+91620,91620,Devon and Cornwall,2021,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Medium,South West
+92718,92718,Durham,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,North
+93291,93291,Dyfed-Powys,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,South West
+93292,93292,Dyfed-Powys,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,South West
+93772,93772,Essex,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,South East
+93773,93773,Essex,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,South East
+94958,94958,Greater Manchester,2021,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Medium,West Midlands
+94959,94959,Greater Manchester,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,West Midlands
+94960,94960,Greater Manchester,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,West Midlands
+95882,95882,Gwent,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,South West
+95883,95883,Gwent,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,South West
+96367,96367,Hampshire,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,South East
+96998,96998,Hertfordshire,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,South East
+97514,97514,Humberside,2021,1,Homicide,Violence against the person,Homicide,3,(-0.001. 20.0],Medium,East Midlands
+98119,98119,Kent,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,South East
+98796,98796,Lancashire,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,West Midlands
+99501,99501,Leicestershire,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,East Midlands
+100809,100809,Merseyside,2021,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Medium,West Midlands
+101539,101539,Metropolitan Police,2021,1,Homicide,Violence against the person,Homicide,24,(20.0. 40.0],Medium,South East
+102901,102901,North Wales,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,South West
+105113,105113,Nottinghamshire,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,East Midlands
+105776,105776,South Wales,2021,1,Homicide,Violence against the person,Homicide,2,(-0.001. 20.0],Medium,South West
+106354,106354,South Yorkshire,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,East Midlands
+108769,108769,Sussex,2021,1,Homicide,Violence against the person,Homicide,1,(-0.001. 20.0],Medium,South East
+109415,109415,Thames Valley,2021,1,Homicide,Violence against the person,Homicide,5,(-0.001. 20.0],Medium,South East
+110552,110552,West Mercia,2021,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Medium,South West
+111137,111137,West Midlands,2021,1,Homicide,Violence against the person,Homicide,4,(-0.001. 20.0],Medium,West Midlands
