@@ -1,0 +1,76 @@
+,Level_of_Lockdown,Region,Crime type,Count
+0,High,East Midlands,Criminal damage and arson,23216
+1,High,East Midlands,Drug offences,4476
+2,High,East Midlands,Public order offences,17254
+3,High,East Midlands,Theft offences,53294
+4,High,East Midlands,Violence and sexual offences,67831
+5,High,North,Criminal damage and arson,10407
+6,High,North,Drug offences,1346
+7,High,North,Public order offences,5394
+8,High,North,Theft offences,17084
+9,High,North,Violence and sexual offences,20322
+10,High,South East,Criminal damage and arson,26515
+11,High,South East,Drug offences,13992
+12,High,South East,Public order offences,17980
+13,High,South East,Theft offences,79734
+14,High,South East,Violence and sexual offences,79975
+15,High,South West,Criminal damage and arson,12101
+16,High,South West,Drug offences,2687
+17,High,South West,Public order offences,7977
+18,High,South West,Theft offences,24456
+19,High,South West,Violence and sexual offences,37083
+20,High,West Midlands,Criminal damage and arson,15777
+21,High,West Midlands,Drug offences,4088
+22,High,West Midlands,Public order offences,11878
+23,High,West Midlands,Theft offences,40205
+24,High,West Midlands,Violence and sexual offences,57666
+25,Medium,East Midlands,Criminal damage and arson,18863
+26,Medium,East Midlands,Drug offences,4614
+27,Medium,East Midlands,Public order offences,16966
+28,Medium,East Midlands,Theft offences,34116
+29,Medium,East Midlands,Violence and sexual offences,63441
+30,Medium,North,Criminal damage and arson,7753
+31,Medium,North,Drug offences,1460
+32,Medium,North,Public order offences,4554
+33,Medium,North,Theft offences,10756
+34,Medium,North,Violence and sexual offences,16974
+35,Medium,South East,Criminal damage and arson,23814
+36,Medium,South East,Drug offences,14666
+37,Medium,South East,Public order offences,18192
+38,Medium,South East,Theft offences,62966
+39,Medium,South East,Violence and sexual offences,74906
+40,Medium,South West,Criminal damage and arson,8933
+41,Medium,South West,Drug offences,2738
+42,Medium,South West,Public order offences,7065
+43,Medium,South West,Theft offences,15270
+44,Medium,South West,Violence and sexual offences,32561
+45,Medium,West Midlands,Criminal damage and arson,14397
+46,Medium,West Midlands,Drug offences,4226
+47,Medium,West Midlands,Public order offences,14418
+48,Medium,West Midlands,Theft offences,27917
+49,Medium,West Midlands,Violence and sexual offences,64758
+50,No Lockdown,East Midlands,Criminal damage and arson,22512
+51,No Lockdown,East Midlands,Drug offences,3950
+52,No Lockdown,East Midlands,Public order offences,14070
+53,No Lockdown,East Midlands,Theft offences,57165
+54,No Lockdown,East Midlands,Violence and sexual offences,58430
+55,No Lockdown,North,Criminal damage and arson,10168
+56,No Lockdown,North,Drug offences,1185
+57,No Lockdown,North,Public order offences,4749
+58,No Lockdown,North,Theft offences,18332
+59,No Lockdown,North,Violence and sexual offences,17706
+60,No Lockdown,South East,Criminal damage and arson,25573
+61,No Lockdown,South East,Drug offences,12534
+62,No Lockdown,South East,Public order offences,17188
+63,No Lockdown,South East,Theft offences,74044
+64,No Lockdown,South East,Violence and sexual offences,79294
+65,No Lockdown,South West,Criminal damage and arson,13475
+66,No Lockdown,South West,Drug offences,2924
+67,No Lockdown,South West,Public order offences,8208
+68,No Lockdown,South West,Theft offences,27696
+69,No Lockdown,South West,Violence and sexual offences,39120
+70,No Lockdown,West Midlands,Criminal damage and arson,25803
+71,No Lockdown,West Midlands,Drug offences,4989
+72,No Lockdown,West Midlands,Public order offences,18561
+73,No Lockdown,West Midlands,Theft offences,64378
+74,No Lockdown,West Midlands,Violence and sexual offences,70411
