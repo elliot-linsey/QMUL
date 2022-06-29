@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<!-- saved from url=(0459)https://www.ons.gov.uk/visualisations/dvc1080/fig8/index.html?initialWidth=700&childId=c92-44a1-8c54-d49c49bd509d&parentTitle=The%20impact%20of%20the%20coronavirus%20so%20far%3A%20the%20industries%20that%20struggled%20or%20recovered%20-%20Office%20for%20National%20Statistics&parentUrl=https%3A%2F%2Fwww.ons.gov.uk%2Feconomy%2Feconomicoutputandproductivity%2Foutput%2Farticles%2Ftheimpactofthecoronavirussofartheindustriesthatstruggledorrecovered%2F2020-12-09 -->
+<html lang="en" class="embedded"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./css(1)" rel="stylesheet" type="text/css">
+<title>COVID Impact on Industry</title>
+<meta name="description" content="">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="./globalStyle.css">
+<style type="text/css">
+    body {
+      color: #323132;
+      /* max-width:944px; */
+    }
+
+    .x.axis path {
+      display: none;
+    }
+
+    path {
+      fill: none;
+    }
+
+    text {
+      font-family: 'Open Sans'
+    }
+
+    text.x,
+    text.y {
+      font-size: 12px;
+      fill: #666;
+    }
+
+    line.y,
+    line.x {
+      stroke: #ccc;
+      stroke-width: 1px;
+      shape-rendering: crispEdges;
+    }
+
+    #legend {
+      font-size: 12px;
+      min-height: 30px;
+    }
+
+    h4 {
+      font-size: 16px;
+      line-height: 24px;
+      margin: 16px 0 16px 0;
+      padding: 24px 0 0 0;
+      font-weight: bold;
+    }
+
+    h5 {
+      font-size: 14px;
+      margin: 0 0 16px 0;
+      font-weight: normal;
+      padding-top: 0;
+    }
+
+    h5,h6 {
+      font-size: 16px;
+      margin: 16px 0 8px 0;
+      font-weight: 700;
+      color: #323132;
+    }
+
+    ul, ol {
+      margin: 16px 0;
+      padding-left: 32px;
+    }
+
+    li {
+        margin: 0 0 8px 0;
+        line-height: 32px;
+        font-weight: 400;
+        font-size: 18px;
+        padding: 0;
+    }
+
+    @media (max-width:767px){
+        li{
+          font-size:16px;
+        }
+    }
+
+  	.linelbwregion {
+  		stroke: #206095;
+  		stroke-linecap: round !important;
+  		stroke-width: 2px !important;
+  	}
+
+    .linelbwew {
+  		stroke: #118C7B;
+      /*stroke-dasharray: 5 8 !important;*/
+  		stroke-linecap: round !important;
+  		stroke-width: 2px !important;
+  	}
+    .linebaseline {
+      stroke: #808080;
+      /*stroke-dasharray: 5 8 !important;*/
+      stroke-linecap: round !important;
+      stroke-width: 1px !important;
+    }
+    a {
+        text-decoration: underline;
+        font-size: 18px;
+        font-weight: 400;
+        line-height: 32px;
+    }
+
+    .btn {
+        font-family: "Open Sans",Helvetica,Arial,sans-serif;
+        display: inline-block;
+        width: auto;
+        cursor: pointer;
+        padding: 6px 16px 10px 16px;
+        border: 0 none;
+        text-align: center;
+        -webkit-appearance: none;
+        transition: background-color 0.25s ease-out;
+    }
+
+    .btn--primary:focus {
+    background-color: #0b5d30;
+}
+
+    .btn--primary {
+    background-color: #0F8243;
+    color: #fff;
+}
+.visuallyhidden{
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
+
+  </style>
+</head>
+<body marginheight="0">
+<h5 class="visuallyhidden">Cinema turnover remains depressed, reflecting closures as part of measures to reduce virus transmission</h5>
+<div id="legend" aria-hidden="true"><svg height="30" width="700"><g transform="translate(5,5)"></g></svg></div>
+<div id="graphic" aria-hidden="true" style="position:relative">
+
+<svg width="233.33333333333334" height="187" transform="translate(0,0)"><text x="35" y="12" font-weight="700" font-size="14px">Distribution</text><g transform="translate(35,32)"><g class="x axis" transform="translate(0,110)" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle"><path class="domain" stroke="#000" d="M0.5,6V0.5H175.83333333333334V6"></path><g class="tick" opacity="1" transform="translate(0.5,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 19</text></g><g class="tick" opacity="1" transform="translate(52.6021325122591,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jul 19</text></g><g class="tick" opacity="1" transform="translate(105.59202873759837,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 20</text></g><g class="tick" opacity="1" transform="translate(175.83333333333334,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Sep 20</text></g></g><g class="y axis" fill="none" font-size="10" font-family="sans-serif" text-anchor="end"><path class="domain" stroke="#000" d="M175.33333333333334,110.5H0.5V0.5H175.33333333333334"></path><g class="tick" opacity="1" transform="translate(0,110.5)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em">0</text></g><g class="tick" opacity="1" transform="translate(0,76.125)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em">50</text></g><g class="tick" opacity="1" transform="translate(0,41.75)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em">100</text></g><g class="tick" opacity="1" transform="translate(0,7.375)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em">150</text></g></g><path d="M0,41.25L8.925624358535751,41.25L16.987478617858365,41.25L25.9011061694606,41.25L34.53880716159197,41.25L43.464431520127725,41.25L52.1021325122591,41.25L61.027756870794846,41.25L69.9533812293306,41.25L78.59108222146197,41.25L87.52870338693124,41.25L96.16640437906261,41.25L105.09202873759837,41.25L114.01765309613411,41.25L122.3674307218611,41.25L131.28105827346334,41.25L139.91875926559473,41.25L148.84438362413047,41.25L157.48208461626183,41.25L166.4077089747976,41.25L175.33333333333334,41.25" class="linebaseline" stroke="#666" stroke-width="3px"></path><path d="M0,34.108238381250004L8.925624358535751,30.993635543750003L16.987478617858365,20.32088141874999L25.9011061694606,3.3953794187499966L34.53880716159197,22.263144543750002L43.464431520127725,30.243496662500007L52.1021325122591,25.466295387499997L61.027756870794846,21.43227528749999L69.9533812293306,16.698119143750006L78.59108222146197,23.664484662499987L87.52870338693124,30.58595024374999L96.16640437906261,26.057449962499987L105.09202873759837,46.97366359812501L114.01765309613411,19.55815929375001L122.3674307218611,25.934797968750004L131.28105827346334,46.669458309374996L139.91875926559473,50.531711594375004L148.84438362413047,60.152632340625004L157.48208461626183,10.620473462499987L166.4077089747976,47.13220274124999L175.33333333333334,75.383740279375" class="linelbwregion" stroke="#666" stroke-width="3px"></path></g></svg><svg width="233.33333333333334" height="187" transform="translate(0,0)"><text x="35" y="12" font-weight="700" font-size="14px">Music</text><g transform="translate(35,32)"><g class="x axis" transform="translate(0,110)" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle"><path class="domain" stroke="#000" d="M0.5,6V0.5H175.83333333333334V6"></path><g class="tick" opacity="1" transform="translate(0.5,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 19</text></g><g class="tick" opacity="1" transform="translate(52.6021325122591,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jul 19</text></g><g class="tick" opacity="1" transform="translate(105.59202873759837,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 20</text></g><g class="tick" opacity="1" transform="translate(175.83333333333334,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Sep 20</text></g></g><g class="y axis" fill="none" font-size="10" font-family="sans-serif" text-anchor="end"><path class="domain" stroke="#000" d="M175.33333333333334,110.5H0.5V0.5H175.33333333333334"></path><g class="tick" opacity="1" transform="translate(0,110.5)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,76.125)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,41.75)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,7.375)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g></g><path d="M0,41.25L8.925624358535751,41.25L16.987478617858365,41.25L25.9011061694606,41.25L34.53880716159197,41.25L43.464431520127725,41.25L52.1021325122591,41.25L61.027756870794846,41.25L69.9533812293306,41.25L78.59108222146197,41.25L87.52870338693124,41.25L96.16640437906261,41.25L105.09202873759837,41.25L114.01765309613411,41.25L122.3674307218611,41.25L131.28105827346334,41.25L139.91875926559473,41.25L148.84438362413047,41.25L157.48208461626183,41.25L166.4077089747976,41.25L175.33333333333334,41.25" class="linebaseline" stroke="#666" stroke-width="3px"></path><path d="M0,26.60582285625L8.925624358535751,32.7685975375L16.987478617858365,36.94779625624999L25.9011061694606,43.758068083124996L34.53880716159197,44.801858406250005L43.464431520127725,28.6898673875L52.1021325122591,26.607889687500005L61.027756870794846,34.03144531875L69.9533812293306,24.391231493750013L78.59108222146197,31.294059706249996L87.52870338693124,65.56688756062499L96.16640437906261,25.62622871875L105.09202873759837,46.10023009625L114.01765309613411,48.813607067499994L122.3674307218611,47.607945955625006L131.28105827346334,52.383090354375L139.91875926559473,52.182446965000004L148.84438362413047,24.69949281250001L157.48208461626183,45.285494354375004L166.4077089747976,35.257522987499996L175.33333333333334,39.57578920624999" class="linelbwregion" stroke="#666" stroke-width="3px"></path></g></svg><svg width="233.33333333333334" height="187" transform="translate(0,0)"><text x="35" y="12" font-weight="700" font-size="14px">Production</text><g transform="translate(35,32)"><g class="x axis" transform="translate(0,110)" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle"><path class="domain" stroke="#000" d="M0.5,6V0.5H175.83333333333334V6"></path><g class="tick" opacity="1" transform="translate(0.5,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 19</text></g><g class="tick" opacity="1" transform="translate(52.6021325122591,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jul 19</text></g><g class="tick" opacity="1" transform="translate(105.59202873759837,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 20</text></g><g class="tick" opacity="1" transform="translate(175.83333333333334,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Sep 20</text></g><text transform="translate(175.33333333333334,35)" text-anchor="middle" fill="#666">Year</text></g><g class="y axis" fill="none" font-size="10" font-family="sans-serif" text-anchor="end"><path class="domain" stroke="#000" d="M175.33333333333334,110.5H0.5V0.5H175.33333333333334"></path><g class="tick" opacity="1" transform="translate(0,110.5)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,76.125)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,41.75)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,7.375)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g></g><path d="M0,41.25L8.925624358535751,41.25L16.987478617858365,41.25L25.9011061694606,41.25L34.53880716159197,41.25L43.464431520127725,41.25L52.1021325122591,41.25L61.027756870794846,41.25L69.9533812293306,41.25L78.59108222146197,41.25L87.52870338693124,41.25L96.16640437906261,41.25L105.09202873759837,41.25L114.01765309613411,41.25L122.3674307218611,41.25L131.28105827346334,41.25L139.91875926559473,41.25L148.84438362413047,41.25L157.48208461626183,41.25L166.4077089747976,41.25L175.33333333333334,41.25" class="linebaseline" stroke="#666" stroke-width="3px"></path><path d="M0,37.0870273125L8.925624358535751,36.6476279125L16.987478617858365,40.175967150000005L25.9011061694606,42.5325469525L34.53880716159197,39.74089322499999L43.464431520127725,39.06692618125L52.1021325122591,35.73160531875L61.027756870794846,35.446111181250004L69.9533812293306,30.063234643749993L78.59108222146197,28.785415587499998L87.52870338693124,32.779258462499996L96.16640437906261,27.544448112499992L105.09202873759837,37.752722287500006L114.01765309613411,32.06891888749999L122.3674307218611,41.00778027499999L131.28105827346334,63.932438405L139.91875926559473,73.62119120125001L148.84438362413047,60.138138059999996L157.48208461626183,57.929495511249996L166.4077089747976,53.519012146875L175.33333333333334,57.02042534375" class="linelbwregion" stroke="#666" stroke-width="3px"></path></g></svg><svg width="233.33333333333334" height="187" transform="translate(0,0)"><text x="35" y="12" font-weight="700" font-size="14px">Cinema</text><g transform="translate(35,32)"><g class="x axis" transform="translate(0,110)" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle"><path class="domain" stroke="#000" d="M0.5,6V0.5H175.83333333333334V6"></path><g class="tick" opacity="1" transform="translate(0.5,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 19</text></g><g class="tick" opacity="1" transform="translate(52.6021325122591,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jul 19</text></g><g class="tick" opacity="1" transform="translate(105.59202873759837,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 20</text></g><g class="tick" opacity="1" transform="translate(175.83333333333334,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Sep 20</text></g></g><g class="y axis" fill="none" font-size="10" font-family="sans-serif" text-anchor="end"><path class="domain" stroke="#000" d="M175.33333333333334,110.5H0.5V0.5H175.33333333333334"></path><g class="tick" opacity="1" transform="translate(0,110.5)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em">0</text></g><g class="tick" opacity="1" transform="translate(0,76.125)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em">50</text></g><g class="tick" opacity="1" transform="translate(0,41.75)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em">100</text></g><g class="tick" opacity="1" transform="translate(0,7.375)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em">150</text></g></g><path d="M0,41.25L8.925624358535751,41.25L16.987478617858365,41.25L25.9011061694606,41.25L34.53880716159197,41.25L43.464431520127725,41.25L52.1021325122591,41.25L61.027756870794846,41.25L69.9533812293306,41.25L78.59108222146197,41.25L87.52870338693124,41.25L96.16640437906261,41.25L105.09202873759837,41.25L114.01765309613411,41.25L122.3674307218611,41.25L131.28105827346334,41.25L139.91875926559473,41.25L148.84438362413047,41.25L157.48208461626183,41.25L166.4077089747976,41.25L175.33333333333334,41.25" class="linebaseline" stroke="#666" stroke-width="3px"></path><path d="M0,54.987386073124995L8.925624358535751,60.02077376625L16.987478617858365,48.546493386875L25.9011061694606,36.19205913124999L34.53880716159197,29.951954174999997L43.464431520127725,33.91919423750001L52.1021325122591,31.138750775000005L61.027756870794846,48.124398286250006L69.9533812293306,43.91824543562501L78.59108222146197,41.795743199374996L87.52870338693124,50.979507328749996L96.16640437906261,38.7295181625L105.09202873759837,35.1652860625L114.01765309613411,45.57708561312499L122.3674307218611,72.26222807375L131.28105827346334,109.189606637375L139.91875926559473,99.45056408375L148.84438362413047,96.622682261875L157.48208461626183,107.591476883L166.4077089747976,100.77105599687499L175.33333333333334,82.31659112874999" class="linelbwregion" stroke="#666" stroke-width="3px"></path></g></svg><svg width="233.33333333333334" height="187" transform="translate(0,0)"><text x="35" y="12" font-weight="700" font-size="14px">Post-production</text><g transform="translate(35,32)"><g class="x axis" transform="translate(0,110)" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle"><path class="domain" stroke="#000" d="M0.5,6V0.5H175.83333333333334V6"></path><g class="tick" opacity="1" transform="translate(0.5,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 19</text></g><g class="tick" opacity="1" transform="translate(52.6021325122591,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jul 19</text></g><g class="tick" opacity="1" transform="translate(105.59202873759837,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 20</text></g><g class="tick" opacity="1" transform="translate(175.83333333333334,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Sep 20</text></g></g><g class="y axis" fill="none" font-size="10" font-family="sans-serif" text-anchor="end"><path class="domain" stroke="#000" d="M175.33333333333334,110.5H0.5V0.5H175.33333333333334"></path><g class="tick" opacity="1" transform="translate(0,110.5)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,76.125)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,41.75)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,7.375)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g></g><path d="M0,41.25L8.925624358535751,41.25L16.987478617858365,41.25L25.9011061694606,41.25L34.53880716159197,41.25L43.464431520127725,41.25L52.1021325122591,41.25L61.027756870794846,41.25L69.9533812293306,41.25L78.59108222146197,41.25L87.52870338693124,41.25L96.16640437906261,41.25L105.09202873759837,41.25L114.01765309613411,41.25L122.3674307218611,41.25L131.28105827346334,41.25L139.91875926559473,41.25L148.84438362413047,41.25L157.48208461626183,41.25L166.4077089747976,41.25L175.33333333333334,41.25" class="linebaseline" stroke="#666" stroke-width="3px"></path><path d="M0,68.450514598125L8.925624358535751,65.92168807125L16.987478617858365,64.03136685000001L25.9011061694606,66.043349068125L34.53880716159197,62.888850983750004L43.464431520127725,52.23858360875L52.1021325122591,49.855137124375005L61.027756870794846,62.897521039375L69.9533812293306,62.7304637575L78.59108222146197,63.48894787125L87.52870338693124,68.07075879312501L96.16640437906261,59.906187914374996L105.09202873759837,67.26767398312501L114.01765309613411,69.214273968125L122.3674307218611,76.33820227000001L131.28105827346334,72.69104341125L139.91875926559473,82.747528923125L148.84438362413047,85.981580183125L157.48208461626183,85.792842265625L166.4077089747976,90.954292226875L175.33333333333334,87.95367757687501" class="linelbwregion" stroke="#666" stroke-width="3px"></path></g></svg><svg width="233.33333333333334" height="187" transform="translate(0,0)"><text x="35" y="12" font-weight="700" font-size="14px">All Music, Film and TV</text><g transform="translate(35,32)"><g class="x axis" transform="translate(0,110)" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle"><path class="domain" stroke="#000" d="M0.5,6V0.5H175.83333333333334V6"></path><g class="tick" opacity="1" transform="translate(0.5,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 19</text></g><g class="tick" opacity="1" transform="translate(52.6021325122591,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jul 19</text></g><g class="tick" opacity="1" transform="translate(105.59202873759837,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Jan 20</text></g><g class="tick" opacity="1" transform="translate(175.83333333333334,0)"><line stroke="#000" y2="6"></line><text fill="#000" y="9" dy="0.71em">Sep 20</text></g><text transform="translate(175.33333333333334,35)" text-anchor="middle" fill="#666">Year</text></g><g class="y axis" fill="none" font-size="10" font-family="sans-serif" text-anchor="end"><path class="domain" stroke="#000" d="M175.33333333333334,110.5H0.5V0.5H175.33333333333334"></path><g class="tick" opacity="1" transform="translate(0,110.5)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,76.125)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,41.75)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,7.375)"><line stroke="#000" x2="175.33333333333334"></line><text fill="#000" x="-3" dy="0.32em"></text></g></g><path d="M0,41.25L8.925624358535751,41.25L16.987478617858365,41.25L25.9011061694606,41.25L34.53880716159197,41.25L43.464431520127725,41.25L52.1021325122591,41.25L61.027756870794846,41.25L69.9533812293306,41.25L78.59108222146197,41.25L87.52870338693124,41.25L96.16640437906261,41.25L105.09202873759837,41.25L114.01765309613411,41.25L122.3674307218611,41.25L131.28105827346334,41.25L139.91875926559473,41.25L148.84438362413047,41.25L157.48208461626183,41.25L166.4077089747976,41.25L175.33333333333334,41.25" class="linebaseline" stroke="#666" stroke-width="3px"></path><path d="M0,41.69337332875001L8.925624358535751,37.87950017499999L16.987478617858365,38.2797987L25.9011061694606,37.54357110625L34.53880716159197,39.48058324374999L43.464431520127725,35.7400055375L52.1021325122591,32.5000534375L61.027756870794846,35.481220156250004L69.9533812293306,25.763654468750005L78.59108222146197,28.282788462499994L87.52870338693124,33.5882938875L96.16640437906261,26.871504137499997L105.09202873759837,32.63336250625001L114.01765309613411,31.64150941874999L122.3674307218611,33.911066543749996L131.28105827346334,58.691658341250005L139.91875926559473,64.5364033325L148.84438362413047,57.159387236875006L157.48208461626183,53.74584197812501L166.4077089747976,52.78095206312501L175.33333333333334,57.930387288125" class="linelbwregion" stroke="#666" stroke-width="3px"></path></g></svg><svg id="annotationLayer" height="374" width="757" style="background-color: rgba(255, 255, 255, 0); position: absolute; left: 0px; top: 0px;"></svg></div>
+<h6 id="source">Source: Office for National Statistics – Monthly Business Survey</h6>
+
+<script src="./d3.min.js(1).download" type="text/javascript"></script>
+
+<script src="./modernizr.svg.min.js.download" type="text/javascript"></script>
+<script src="./pym.min.js.download" type="text/javascript"></script>
+
+<script>
+    var graphic = d3.select('#graphic');
+    var legend = d3.select('#legend');
+    var pymChild = null;
+
+    function drawGraphic() {
+
+      maxweek=d3.max(graphic_data,function(d){return d.date})
+
+      var threshold_md = dvc.optional.middleBreakpoint;
+      var threshold_sm = dvc.optional.mobileBreakpoint;
+
+      if (parseInt(graphic.style("width")) < threshold_sm) {
+        size = "sm";
+      } else if (parseInt(graphic.style("width")) < threshold_md) {
+        size = "md";
+      } else {
+        size = "lg";
+      }
+
+      categorySort = {}
+      if(Array.isArray(dvc.essential.categorySort)){
+        for (i = 0; i < dvc.essential.categorySort.length; i++) {
+          categorySort[dvc.essential.categorySort[i]] = i;
+        }
+
+        graphic_data.sort(function(a, b) {
+          return categorySort[a.category] - categorySort[b.category]
+        })
+
+        categories=Object.keys(categorySort)
+      } else if(dvc.essential.categorySort=="descending"){
+        //auto sort the array by biggest value
+        graphic_data.filter(function(d){
+          return d.date==maxweek
+        }).sort(function(a,b){return +b.chiffre - (+a.chiffre)}).forEach(function(item, i){
+          categorySort[item.category]=i
+        });
+
+        graphic_data.sort(function(a, b) {
+          return categorySort[a.category] - categorySort[b.category]
+        })
+
+        categories=Object.keys(categorySort)
+      } else if (dvc.essential.categorySort=="ascending"){
+        graphic_data.filter(function(d){
+          return d.date==maxweek
+        }).sort(function(a,b){return +a.chiffre - (+b.chiffre)}).forEach(function(item, i){
+          categorySort[item.category]=i
+        });
+
+        graphic_data.sort(function(a, b) {
+          return categorySort[a.category] - categorySort[b.category]
+        })
+
+        categories=Object.keys(categorySort)
+
+      }
+
+      var margin = dvc.optional.margin[size]
+      var chart_width = parseInt(graphic.style("width")) / dvc.optional.chart_every[size] - margin.left - margin.right;
+      var height = Math.ceil((chart_width * dvc.optional.aspectRatio[size][1]) / dvc.optional.aspectRatio[size][0]);
+
+      // clear out existing graphics
+      graphic.selectAll("*").remove();
+      legend.selectAll("*").remove();
+
+      //draw legend
+      legend.append('svg').attr("height", dvc.optional.legendHeight[size]).attr("width", dvc.optional.chart_every[size] * (chart_width + margin.left + margin.right)).append('g')
+        .attr('transform', 'translate(5,5)')
+
+//      createLegend();
+
+      function createLegend() {
+
+        var prevX = 0;
+        var prevY = 0;
+        lineNo = 0;
+        var lineNoOld = 0;
+
+        dvc.essential.colour_palette.map(function(d) {
+          return d.key
+        }).forEach(function(d, i) {
+
+          // draw legend text based on content of var legendLabels ...
+          var_group = d3.select("#legend").select('svg').append("g")
+
+          var_group.append("rect")
+            .attr("class", "rect" + i)
+            .attr("fill", dvc.essential.colour_palette[i].colour)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", 20)
+            .attr("height", 3)
+
+          var_group.append("text")
+            .text(dvc.essential.colour_palette[i].key)
+            .attr("class", "legend" + i)
+            .attr("text-anchor", "start")
+            .style("font-size", "12px")
+            .style("fill", "#666")
+            .attr('y', 6)
+            .attr('x', 0);
+
+
+          d3.selectAll(".legend" + (i))
+            .each(calcPosition);
+
+          function calcPosition() {
+
+
+            var BBox = this.getBBox()
+
+
+            //prevY =BBox.width
+            d3.select(".legend" + (i))
+              .attr("y", function(d) {
+                if ((prevX + BBox.width + 50) > parseInt(graphic.style("width"))) {
+                  lineNoOld = lineNo;
+                  lineNo = lineNo + 1;
+                  prevX = 0;
+                }
+                return eval((lineNo * 20) + 20);
+              })
+              .attr("x", function(d) {
+                return prevX + 25;
+              })
+
+
+            d3.select(".rect" + (i))
+              .attr("y", function(d) {
+
+                if ((prevX + BBox.width + 50) > parseInt(graphic.style("width"))) {
+                  lineNoOld = lineNo;
+                  lineNo = lineNo + 1;
+                  prevX = 0;
+                }
+
+                if (dvc.essential.legendStyle == "rect") {
+                  return eval((lineNo * 20) + 5);
+                } else {
+                  return eval((lineNo * 20) + 12);
+
+                }
+              })
+              .attr("x", function(d) {
+                return prevX;
+              })
+
+            prevX = prevX + BBox.width + 50
+
+
+
+          }; // end function calcPosition()
+        }); // end foreach
+        d3.select("#legend").select('svg').style("height","30px")
+      } // end function createLegend()
+
+      x = d3.scaleTime()
+        .range([0, chart_width]);
+
+      x.domain(d3.extent(graphic_data, function(d) {
+        return d.date
+      }))
+
+      dates=d3.map(graphic_data,function(d){return d.date}).keys()
+
+
+      var xAxis = d3.axisBottom(x)
+          .tickValues(d3.map(graphic_data,function(d){return d.date}).keys()
+          .map(function(d){return d3.timeParse("%a %b %d %Y")(d.match(/\b[\w']+(?:[^\w\n]+[\w']+){1,3}\b/g)[0])})
+          .sort(function(a,b){return a - b})
+          .filter(function(d,i){
+            return i % dvc.optional.x_ticks_every[size] === 0&&i<dates.length-dvc.optional.x_ticks_every[size] || i==dates.length-1 //Rob's fussy comment about labelling the last date
+          }))
+          .tickFormat(d3.timeFormat("%b %y"))
+
+      line = d3.line()
+        .x(function(d) {
+          return x(d.date)
+        })
+        .y(function(d) {
+          return y[d.category](d.chiffre)
+        })
+
+
+      nested = d3.nest()
+        .key(function(d) {
+          return d.category
+        })
+        .key(function(d) {
+          return d.series
+        })
+        .sortValues(function(a,b) { return a.date - b.date; } )
+        .entries(graphic_data)
+
+      //x domain calculations	: zero to intelligent max choice, or intelligent min and max choice,  or interval chosen manually
+      y = {}
+
+
+      if (dvc.essential.yAxisScale == "auto_zero_max_total") {
+        var yDomain = [0, d3.max(graphic_data, function(d) {
+          return +d.chiffre
+        })];
+        nested.forEach(function(item, i) {
+          y[item.key] = d3.scaleLinear()
+            .range([height, 0])
+            .domain(yDomain)
+            .nice();
+        });
+      } else if (dvc.essential.yAxisScale == "auto_min_max_total") {
+        var yDomain = d3.extent(graphic_data, function(d) {
+          return +d.chiffre
+        });
+        nested.forEach(function(item, i) {
+          y[item.key] = d3.scaleLinear()
+            .range([height, 0])
+            .domain(yDomain)
+            .nice();
+        });
+      } else if (dvc.essential.yAxisScale == "auto_min_max_each") {
+        rolledup = d3.nest()
+          .key(function(d) {
+            return d.category
+          })
+          .rollup(function(v) {
+            return [d3.min(v, function(d) {
+              return +d.chiffre
+            }), d3.max(v, function(d) {
+              return +d.chiffre
+            })]
+          })
+          .entries(graphic_data)
+
+        rolledup.forEach(function(item, i) {
+          y[item.key] = d3.scaleLinear()
+            .range([height, 0])
+            .domain(item.value)
+            .nice();
+        });
+
+      } else if (dvc.essential.yAxisScale == "auto_zero_max_each") {
+        rolledup = d3.nest()
+          .key(function(d) {
+            return d.category
+          })
+          .rollup(function(v) {
+            return [0, d3.max(v, function(d) {
+              return +d.chiffre
+            })]
+          })
+          .entries(graphic_data)
+
+        rolledup.forEach(function(item, i) {
+          y[item.key] = d3.scaleLinear()
+            .range([height, 0])
+            .domain(item.value)
+            .nice();
+        });
+
+      }
+
+
+
+      // sort these hardwired numbers maybe through the dimensions above
+      charts = d3.select('#graphic')
+        .selectAll('svg')
+        .data(nested)
+        .enter()
+        .append('svg')
+        .attr("width", chart_width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .attr("transform", "translate(0,0)")
+
+      charts
+        .append('text')
+        .attr("x", margin.left)
+        .attr("y", 12)
+        .text(function(d) {
+          return d.key
+        })
+        .attr('font-weight', 700)
+        .attr('font-size', "14px")
+
+      svg = charts
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+      svg
+        .append('g')
+        .attr('class', 'x axis')
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+        .each(function(d, i) {
+          if (i % dvc.optional.chart_every[size] == dvc.optional.chart_every[size] - 1||i==nested.length-1) {
+            d3.select(this).append("text")
+              .text(dvc.essential.xAxisLabel)
+              .attr("transform", "translate(" + chart_width +  "," + (margin.bottom - 10) + ")")
+              .attr('text-anchor', 'middle')
+              .attr('fill', "#666");
+          }
+        })
+
+      //create svg for chart
+
+      drawyaxis = svg
+        .append('g')
+        .attr('class', 'y axis')
+
+      drawyaxis.each(function(d, i) {
+        if (i % dvc.optional.chart_every[size] == 0) {
+          d3.select(this).call(d3.axisLeft(y[d.key]).tickSize(-chart_width).ticks(3));
+        } else {
+          d3.select(this).call(d3.axisLeft(y[d.key]).tickSize(-chart_width).tickFormat("").ticks(3))
+        }
+
+      })
+
+      svg
+        .selectAll('g.line')
+        .data(function(d) {
+          return d.values;
+        })
+        .enter()
+        .append('path')
+        .attr("d", function(d) {
+          // console.log(d)
+          return line(d.values)
+        })
+        .attr("class",function(d){return "line"+d.key.replace(/\s/g, '')})
+        // .attr("stroke", function(d) {
+        //   return dvc.essential.colour_palette.filter(function(e) {
+        //     return e.key == d.key
+        //   })[0].colour
+        // })
+        .attr("stroke","#666")
+        .attr('stroke-width', "3px")
+
+      // create a big SVG over the top for annotations
+      annotationsLayer=d3.select("#graphic")
+        .append('svg')
+        .attr('id','annotationLayer')
+        .attr('height', Math.ceil(nested.length / dvc.optional.chart_every[size]) * (height + margin.top + margin.bottom))
+        .attr('width',dvc.optional.chart_every[size]*(chart_width+margin.top+margin.bottom))
+        .style('background-color',"rgba(255, 255, 255, 0)")
+        .style('position','absolute')
+        .style('left', "0px")
+        .style('top',"0px") // was 0
+
+      //create link to source
+      d3.select('#source')
+        .text('Source: ' + dvc.essential.sourceText);
+
+      d3.selectAll(".linelbwregion").raise()
+
+      //use pym to calculate chart dimensions
+      if (pymChild) {
+        pymChild.sendHeight();
+      }
+    }
+
+
+    //check whether browser can cope with svg
+    if (Modernizr.svg) {
+      //load config
+      d3.json("config.json", function(error, config) {
+        dvc = config;
+
+        //load chart data
+        d3.csv(dvc.essential.graphic_data_url, function(error, data) {
+          graphic_data = data;
+
+          graphic_data.forEach(function(d){
+            d.date=d3.timeParse(dvc.essential.dateFormat)(d.date)
+          })
+          //use pym to create iframed chart dependent on specified variables
+          pymChild = new pym.Child({
+            renderCallback: drawGraphic
+          });
+        });
+
+      })
+
+    } else {
+      //use pym to create iframe containing fallback image (which is set as default)
+      pymChild = new pym.Child();
+      if (pymChild) {
+        pymChild.sendHeight();
+      }
+    }
+  </script>
+
+
+</body></html>
