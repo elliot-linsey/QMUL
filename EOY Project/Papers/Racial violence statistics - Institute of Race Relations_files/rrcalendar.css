@@ -1,0 +1,54 @@
+.rrcalendar-results a {
+    text-decoration: underline;
+}
+
+.rrcalendar-image {
+    margin-bottom: 5px;
+    margin-right: 5px;
+    margin-top: 5px;
+}
+
+.facetwp-selections ul {
+    margin: 0px;
+    padding-inline-start: 0px;
+    list-style-type: none;
+}
+
+.facetwp-selections li {
+    display: list-item !important;
+    padding: 3px 0px;
+}
+
+.facetwp-selection-label {
+    font-style: italic;
+}
+
+.fdate-input {
+    margin: 25px 0px;
+}
+
+.rrcalendar-orig {
+    font-size: small;
+    font-weight: bold;
+}
+
+.facetwp-facet input, select  {
+    border-radius: 3px;
+    border: solid 1.5px #D3D3D3;
+    -webkit-transition: 1s;
+    /* Safari */
+    transition: 1s;
+}
+
+.facetwp-facet input[type=text]:hover {
+    box-shadow: 0 0 5pt 0.5pt #D3D3D3;
+}
+
+.facetwp-facet input[type=text]:focus {
+    box-shadow: 0 0 5pt 2pt #D3D3D3;
+    outline-width: 0px;
+}
+
+.fdate-nav-label {
+    text-decoration: underline;
+}
