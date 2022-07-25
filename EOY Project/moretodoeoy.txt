@@ -1,0 +1,2 @@
+emphasise how creating the web app makes bayes models accessible
+Bayesian network is able to go beyond machine learning and data by using 
